@@ -1,0 +1,126 @@
+<font face= "楷体" size = 3>
+
+<center><font face="楷体" size=6, color='red'> 最长上升子序列问题(LIS)
+ </font> </center>
+
+
+### 300. 最长递增子序列
+题意：子序列：保持顺序不变，可以不连续
+
+#### 思路1：普通DP
+**时间复杂度$O(n^2)$**
+```c++
+class Solution {
+public:
+    int lengthOfLIS(vector<int>& nums) {
+        int n = nums.size();
+        vector<int>f(n, 1);
+        int ans = 1;
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < i; j++)
+                if (nums[i] > nums[j]) 
+                    f[i] = max(f[i], f[j] + 1);
+            ans = max(ans, f[i]);
+        }
+        return ans;
+    }
+};
+```
+#### 思路2：模拟栈优化
+遍历原始序列，维护一个单调的数组(栈)，之所以用数组是因为可以用`stl`的`upper_bound`
+大致思路： 如果当前的元素`x`大于单调数组的最后一个元素，那么直接加在后面。如果当前元素`x`小于最后一个元素，那么在单调数组中找到大于`x`的第一个元素，将其更新为`x`
+
+注意：最后单调数组中的元素不一定是最终的结果，但是其长度是最长的`LIS`长度。
+如：`1 2 6 8 5`， 最后单调数组为：`1 2 8 5`， 但结果应该是`1 2 6 8`。
+
+因此单调数组并不是为了求出最终的方案，而是看`LIS`最长能延伸到什么地方，之所以不断找到大于等于`x`的数然后替换为`x`，就是为今后的延伸留出更多的空间。
+
+**时间复杂度$O(nlogn)$**
+```c++
+class Solution {
+public:
+    int lengthOfLIS(vector<int>& nums) {
+        vector<int>a;
+        for (auto x : nums) {
+            if(a.empty() || x > a.back()) a.push_back(x);
+            else    *lower_bound(a.begin(), a.end(), x) = x;
+        }
+        return a.size();
+    }
+};
+```
+---
+
+### 673. 最长递增子序列的个数
+`[1,3,5,4,7], ans = 有两个最长递增子序列，分别是 [1, 3, 4, 7] 和[1, 3, 5, 7]。`
+
+```c++
+class Solution {
+public:
+    int findNumberOfLIS(vector<int>& nums) {
+        int n = nums.size();
+        vector<int>dp(n, 1), cnt(n, 1);
+        int maxn = 1;
+        for(int i = 1; i < n; i++) {
+            for(int j = 0; j < i; j++) {
+                if (nums[j] >= nums[i]) continue;
+                if (dp[j] + 1 > dp[i]) {
+                    dp[i] = dp[j] + 1;
+                    cnt[i] = cnt[j]; // 重置计数
+                }
+                else if(dp[j] + 1 == dp[i]) {
+                    cnt[i] += cnt[j]; // 相当于有另一条路径得到最优解，加上
+                }
+            }
+            maxn = max(maxn, dp[i]);
+        }
+        int res = 0;
+        for(int i = 0; i < n; i++) {
+            if(dp[i] == maxn) res += cnt[i]; // 把所有最长子序列的数量加起来
+        }
+        return res;
+    }
+};
+```
+---
+
+
+### 674. 最长连续递增序列
+题意：不仅要求递增，还要求连续。
+
+#### 思路1：贪心
+**时间复杂度$O(n)$**
+```c++
+class Solution {
+public:
+    int findLengthOfLCIS(vector<int>& nums) {
+        int res = 1, ans = 1;
+        for(int i = 1; i < nums.size(); i++) {
+            if (nums[i] > nums[i - 1]) {
+                res++;
+                ans = max(ans, res);
+            }
+            else  res = 1;
+        }
+        return ans;
+    }   
+};
+```
+
+#### 思路2：DP
+```c++
+class Solution {
+public:
+    int findLengthOfLCIS(vector<int>& nums) {
+        int n = nums.size();
+        vector<int>dp(n, 1);
+        int ans = 1;
+        for (int i = 1; i < n; i++) {
+            if (nums[i] > nums[i - 1]) dp[i] = dp[i - 1] + 1;
+            ans = max(ans, dp[i]);
+        }
+        return ans;
+    }
+};
+```
+---
