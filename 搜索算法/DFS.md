@@ -492,46 +492,7 @@ public:
 };
 ```
 ---
-### 332. 重新安排行程
-给定一个 `n` 个点 `m` 条边的图，要求从指定的顶点出发，经过所有的边恰好一次，找到字典序最小的路径。
-`tickets = [["MUC","LHR"],["JFK","MUC"],["SFO","SJC"],["LHR","SFO"]]`
-`ans = ["JFK","MUC","LHR","SFO","SJC"]`
 
-```c++
-class Solution {
-public: 
-    vector<string>res;
-    vector<string>ans;
-    bool flag = 0;
-    unordered_map<int, bool>vis; // 标记是否遍历过某条边
-    void dfs(vector<vector<string>>& tickets) { // 找
-        if (flag) return;
-        if (res.size() == tickets.size() + 1) {
-            ans = res;
-            flag = 1;
-            return;
-        }
-        for (int i = 0; i < tickets.size(); i++) {
-            string sta = res.back();
-            if (tickets[i][0] != sta || vis[i]) continue; // 如果当前起点不对应或者该条边已经遍历过了
-            vis[i] = 1;
-            res.push_back(tickets[i][1]);
-            dfs(tickets);
-            vis[i] = 0;
-            res.pop_back(); 
-        }
-    }
-    vector<string> findItinerary(vector<vector<string>>& tickets) {
-        sort(tickets.begin(), tickets.end(), [](vector<string>&a, vector<string>& b){
-           return a[1] < b[1]; // 字典序排序，保证终点站的字典序尽可能小
-        }); 
-        res.push_back("JFK"); // 放入起点
-        dfs(tickets);
-        return ans;
-    }
-};
-```
----
 ### 51. N 皇后
 给定一个`n`,在`n * n`的棋盘上放置`n`个皇后，使得彼此不在同一行，同一列，同一斜
 ```c++
