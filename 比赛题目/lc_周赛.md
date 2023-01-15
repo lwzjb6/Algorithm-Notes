@@ -135,3 +135,135 @@ public:
 };
 ```
 ---
+
+### 6292. 子矩阵元素加 1
+假定原数组全部为`0`，在子矩阵`l1,r1,l2,r2`添加1，问多次修改后，数组为什么？
+
+思路：二维差分+二维前缀和的模板题
+难点在于：从索引1开始做比较方便，但是结果返回的是从索引0
+解决办法：先按索引1做，最后拷贝一下。
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> rangeAddQueries(int n, vector<vector<int>>& queries) {
+        vector<vector<int>>d(n + 2, vector<int>(n + 2, 0)); // 因为原数组全为2，所以其差分序列仍旧为0
+        for(auto x : queries) {
+            int l1 = x[0] + 1, r1 = x[1] + 1, l2 = x[2] + 1, r2 = x[3] + 1; // 索引从1开始，所以都加1
+            d[l1][r1] += 1, d[l2 + 1][r1] -= 1, d[l1][r2 + 1] -= 1, d[l2 + 1][r2 + 1] += 1;
+        }
+        // 求二维前缀和
+        for(int i = 1; i <= n; i++) 
+            for(int j = 1; j <= n; j++) 
+                d[i][j] = d[i - 1][j] + d[i][j - 1] - d[i - 1][j - 1] + d[i][j];
+            
+        // 转移一下
+        vector<vector<int>>ans(n, vector<int>(n, 0));
+         for(int i = 0; i < n; i++) 
+            for(int j = 0; j < n; j++)
+                ans[i][j] = d[i + 1][j + 1];
+        return ans; 
+    }
+};
+```
+---
+
+### 6293. 统计好子数组的数目
+一个子数组 `arr` 如果有 **至少 `k `对**下标 `(i, j)` 满足 `i < j` 且 `arr[i] == arr[j]` ，那么称它是一个好子数组。
+
+`nums = [3,1,4,3,2,2,4], k = 2, ans = 4`
+```c++
+总共有 4 个不同的好子数组：
+- [3,1,4,3,2,2] 有 2 对。
+- [3,1,4,3,2,2,4] 有 3 对。
+- [1,4,3,2,2,4] 有 2 对。
+- [4,3,2,2,4] 有 2 对。
+```
+
+#### 思路：滑动窗口
+题目的基本性质：
+如果一个子数组是好数组，那么往其中加任何数都是好数组。
+
+`r`指针不断向右，直到当前数组满足要求，当满足要求后，尝试移动左指针，找到r固定后最小的滑动窗口，此时`0~l`之间的任何一个数与`r`构成的子数组均满足要求。因此答案加`l+1`[本质上是统计每个以r结尾的满足要求的子数组的个数]
+
+快速统计加入一个数后，满足要求的对数。
+如果新加的数是`x`, 其之前出现了`n`次，加入后出现了`n+1`次
+因此新增的对数为：$C_{n + 1}^2 - C_{n}^2 = n $. 也可以简单理解，新增的数会和之前的每个数组成一对，所以新增了n次
+
+同理：如果新减的数是`y`, 其之前出现了`n`次，减掉后出现了`n-1`次，对数减少了`n - 1`对
+
+
+```c++
+class Solution {
+public:
+    typedef long long ll;
+    long long countGood(vector<int>& nums, int k) {
+        int n = nums.size();
+        ll ans = 0, res = 0; // res统计当前子数组内的好数组的个数
+        unordered_map<int, int>hx; //统计每个数出现的次数
+        for(int l = 0, r = 0; r < n; r++) {
+            res += hx[nums[r]]; // 好数组的对数
+            hx[nums[r]] ++;
+            while(res - (hx[nums[l]] - 1) >= k) { // 尝试移动左指针,移动后仍然满足条件
+                hx[nums[l]]--;
+                res -= (hx[nums[l]]);
+                l++;
+            }
+            // 移动完成后，以r指针作为结尾的并且满足要求的子数组有 l + 1个
+            if(res >= k) ans += (l + 1);
+        }
+        return ans;
+    }
+};
+```
+
+### 6294. 最大价值和与最小价值和的差值
+`n = 6, edges = [[0,1],[1,2],[1,3],[3,4],[3,5]], price = [9,8,7,6,10,5], ans = 24`
+
+给一个包含`n`个节点的无向图，`edges`给出边，`price[i]`表示节点`i`的价值，可以选择树中任意一个节点作为根节点`root`,找到最大价值的路径。返回路径的最大价值 - 最小价值（根节点的值或者叶子节点的值）。
+
+#### 树形DP 
+如何不用以每个节点作为根节点遍历整个图呢？
+不要想着整条路径是从一个根节点出发直到叶子节点为止的一条线。
+而是假定任意一个根节点，整条路径是以树中其中某个节点为根节点的一个分岔，即：路径=当前根节点+子树1+子树2 [关键点]
+
+```c++
+class Solution {
+public:
+    typedef long long ll;
+    vector<vector<int>>g;
+    ll ans = 0;
+    pair<ll,ll> DFS(int x, int fa, vector<int>& price){
+        ll p = price[x], max_s1 = p, max_s2 = 0; // 带叶子节点的最大值，不带叶子节点的最大值
+        // 遍历所有的子树
+        for(auto y : g[x]) {
+            if(y != fa) {
+                auto [s1, s2] = DFS(y, x, price);
+                // 核心思路： 当前子树返回带叶子节点的最大值为s1, 少一个叶子节点的最大值为s2
+                //           当前节点x之前的所有子树中带叶子节点的最大值为max_s1, 少一个叶子节点的最大值为max_s2
+                // 按照题意：必须少一个端点
+                ans = max(ans, max(max_s1 + s2, max_s2 + s1)); 
+               
+
+                max_s1 = max(max_s1, s1 + p); // 既然已经走到这里，说明当前节点x有子树，不是叶子结点，所以都可以加p
+                max_s2 = max(max_s2, s2 + p);
+            } 
+        }
+        return {max_s1, max_s2}; // 当前节点维护的信息，供其父节点看是否选择这条子链
+    }
+    long long maxOutput(int n, vector<vector<int>>& edges, vector<int>& price) {
+        g = vector<vector<int>>(n);
+        // 建图
+        for(auto x : edges) {
+            int a = x[0], b =x[1];
+            g[a].push_back(b);
+            g[b].push_back(a);
+        }
+        
+        DFS(0, - 1, price);
+        return ans;
+    }
+};
+```
+
+**时间复杂度：$O(n)$** 因为每个节点遍历了一次。
