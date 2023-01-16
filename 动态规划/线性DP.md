@@ -234,6 +234,24 @@ public:
     }
 };
 ```
+`pow`函数比较慢
+```C++
+class Solution {
+public:
+    int cuttingRope(int n) {
+        if(n <= 3) return n - 1;
+        int ans = 1;
+        if(n % 3 == 1) n -= 4, ans = 4;
+        else if(n % 3 == 2) n-= 2, ans = 2;
+        while(n) {
+            n -= 3;
+            ans *= 3;
+        } 
+        return ans;
+    }
+};
+```
+
 ---
 
 ### 96. 不同的二叉搜索树

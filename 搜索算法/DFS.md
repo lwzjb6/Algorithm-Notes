@@ -590,3 +590,39 @@ public:
 };
 ```
 ---
+
+### 剑指 Offer 12. 矩阵中的路径
+在一个二位字符数组中查找某个字符串是否存在，可以沿上下左右四个方向延伸。
+
+```c++
+class Solution {
+public:
+    int dir[5] = {0, -1, 0, 1, 0};
+    bool vis[10][10];
+    bool dfs(vector<vector<char>>& board, string &word, int u, int x, int y) {
+        if(u == word.size()) return 1;
+
+        for(int i = 0; i < 4; i++) {
+            int nx = x + dir[i], ny = y + dir[i + 1];
+            if(nx < 0 || nx >= board.size() || ny < 0 || ny >= board[0].size() || vis[nx][ny] || board[nx][ny] != word[u]) continue;
+            vis[nx][ny] = 1;
+            if(dfs(board, word, u + 1, nx, ny)) return 1;
+            vis[nx][ny] = 0;
+        }
+        return 0;
+    }
+    bool exist(vector<vector<char>>& board, string word) {
+        for(int i = 0; i < board.size(); i ++) {
+            for(int j = 0; j < board[0].size(); j++) {
+                if(board[i][j] == word[0]) {
+                    vis[i][j] = 1;
+                    if(dfs(board, word, 1, i, j)) return 1;
+                    vis[i][j] = 0;
+                }
+            }
+        }
+        return 0;
+    }
+};
+```
+---
