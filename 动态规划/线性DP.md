@@ -964,3 +964,36 @@ public:
 };
 ```
 ---
+
+### 剑指 Offer 46. 把数字翻译成字符串
+`0` 翻译成 `“a”` ，`1` 翻译成 `“b”`，……，`11` 翻译成 `“l”`，……，`25` 翻译成 `“z”`。一个数字可能有多个翻译。
+问一共有多少种翻译
+
+`12258, ans = 5`
+
+#### DP
+```c++
+class Solution {
+public:
+    int f[15]; // f[i]:以s[i]为结尾的字符串的翻译个数
+    bool check(string &s, int i) { // 判断s[i-1]和s[i]组成的数在不在25以内
+        int a = s[i - 1]- '0', b = s[i] - '0';
+        int num = a * 10 + b;
+        if(num <= 25 && num >= 10) return 1; 
+        return 0;
+    }
+    int translateNum(int num) {
+        string s = " " + to_string(num);
+        int n = s.size() - 1; // 不加前面空格的长度
+        memset(f, 0, sizeof(f));
+        f[0] = 1;
+        for(int i = 1; i <= n; i++) {
+            f[i] += f[i - 1]; // s[i]单独为一组。
+            if(i >= 2 && check(s, i)) {
+                f[i] += f[i - 2]; // s[i-1]s[i]为一组，上一个以s[i-2]结尾
+            }
+        }
+        return f[n];
+    }
+};
+```
