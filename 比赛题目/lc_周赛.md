@@ -267,3 +267,63 @@ public:
 ```
 
 **时间复杂度：$O(n)$** 因为每个节点遍历了一次。
+
+---
+
+### 2547. 拆分数组的最小代价
+
+将数组拆分成一些非空子数组。拆分的**代价** 是每个子数组中的 **重要性** 之和。
+令 `trimmed(subarray)` 作为子数组的一个特征，其中所有仅出现一次的数字将会被移除。
+例如，`trimmed([3,1,2,4,3,4]) = [3,4,3,4]`。
+数组的 重要性 定义为 `k + trimmed(subarray).length` 。
+找出并返回拆分 `nums` 的所有可行方案中的最小代价。
+
+`nums = [1,2,1,2,1,3,3], k = 2.   ans = 8`
+```c++
+将 nums 拆分成两个子数组：[1,2], [1,2,1,3,3]
+[1,2] 的重要性是 2 + (0) = 2 。
+[1,2,1,3,3] 的重要性是 2 + (2 + 2) = 6 。
+拆分的代价是 2 + 6 = 8 
+```
+#### DP
+
+遇到这种拆分子数组，不知道具体个数的情况通常用`DP`
+`f[i]`表示以`i`结尾的元素之前的拆分方案的最优解
+`f[i] = min(f[i], f[j] + ....)`
+用两重循环:
+```python
+for i in range(n)：
+    for j in range(i):
+        f[i] = ...
+```
+
+```c++
+class Solution {
+public:
+    int trim[1010][1010]; 
+    int minCost(vector<int>& nums, int k) {
+        int n = nums.size();
+        // 预处理出trim[i][j]
+        for(int i = 0; i < n; i ++) {
+            unordered_map<int, int>hx;
+            int t = 0;
+            for(int j = i; j < n; j++) {
+                int x = nums[j];
+                hx[x]++;
+                if(hx[x] == 2) t += 2;
+                else if(hx[x] > 2) t++;
+                trim[i][j] = t; // 转化为出现一次的不考虑，其次数字加起来
+            }
+        }
+        // DP
+        vector<int>dp(n + 1, INT_MAX); // `dp[i]`表示以`i`结尾的元素之前的拆分方案的最优解
+        dp[0] = 0; // 边界 dp[i] 对应元素nums[i - 1];
+        for(int i = 1; i <= n; i++) {
+            for(int j = 0; j < i; j++) {
+                dp[i] = min(dp[i], dp[j] + k + trim[j][i - 1]); // dp的索引和nums的索引错一个
+            }
+        }
+        return dp[n];
+    }
+};
+```
