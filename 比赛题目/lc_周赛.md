@@ -327,3 +327,54 @@ public:
     }
 };
 ```
+---
+
+
+### 6340. 统计上升四元组
+返回上升四元组的数目。
+如果一个四元组 `(i, j, k, l)` 满足以下条件，我们称它是上升的：
+`0 <= i <j < k < l < n` 且 `nums[i] < nums[k] < nums[j] < nums[l]`
+注意中间两个是反的，不是常规理解的上升。
+`nums = [1,3,2,4,5] ans = 2`
+`[1 3 2 4] 和 [1 3 2 5]`
+
+**提示：**
+(1): 只考虑 `i, j, k, l`中的`j, k`
+(2): 
+在`k`右侧的比`nums[j]`大的元素个数，记作 `great[k][nums[j]]`;
+在`j `左侧的比`nums[k]`小的元素个数，记作 `less[j][nums[k]]`。
+
+```c++
+class Solution {
+public:
+    static const int N = 4010;
+    int greater[N][N];
+    using ll = long long;
+    long long countQuadruplets(vector<int>& nums) {
+        int n = nums.size();
+        ll ans = 0;
+        // greater[k][x]: 在k右侧比x大的数的个数
+        for(int k = n - 2; k >= 2; k--) {
+            memcpy(greater[k], greater[k + 1], sizeof(greater[k + 1])); // 利用之前的结果
+            for(int x = nums[k + 1] - 1; x > 0; x--) {
+                greater[k][x] ++;
+            }
+        }
+        vector<int>less(n + 1, 0);
+        // less[x]: 在当前j左侧比x小的数的个数
+        for(int j = 1; j < n - 2; j++) {
+            for(int x = nums[j - 1] + 1; x <= n; x++) {
+                less[x] ++;
+            }
+            // 枚举所有可能的j,k组合，其合法的个数为greater[k][nums[j]] * less[j][nums[k]]
+            for(int k = j + 1; k <= n - 2; k++) {
+                if(nums[k] < nums[j]) { // 满足 j,k的要求
+                    ans += greater[k][nums[j]] * less[nums[k]];
+                }
+            }
+        }
+        return ans;
+    }
+};
+```
+
