@@ -377,4 +377,45 @@ public:
     }
 };
 ```
+---
 
+### 6355. 统计公平数对的数目
+问数组中有多少对`i,j, i < j`,使得 `lower < nums[i] + nums[j] < upper`
+`ums = [0,1,7,4,4,5], lower = 3, upper = 6`
+
+#### 二分
+
+首先排序，对于每个数字`nums[i]`, 在它之后用`lower_bound`找出大于等于`（lower - nums[i]）`的第一个位置，记为指针`pos1`, 再用`upper_bound`找出大于`upper - nums[i]`的第一个位置，记为指针`pos2`;
+`pos1`表示其之后的数(包括本位) 满足`lower`的要求
+`pos2`表示其之后的数(包括本位)不满足`upper`的要求
+因此，`[pos1,pos2)`之前的数就是符合要求的个数，个数为：`pos2 - pos1`;
+```c++
+class Solution {
+public:
+    using ll = long long;
+    long long countFairPairs(vector<int>& nums, int lower, int upper) {
+        sort(nums.begin(), nums.end());
+        int n = nums.size();
+        ll ans = 0;
+        for(int i = 0; i < n; i++) {
+            auto start = nums.begin() + i + 1;
+            int pos1 = lower_bound(start, nums.end(), lower - nums[i]) - nums.begin();
+            int pos2 = upper_bound(start, nums.end(), upper - nums[i]) - nums.begin();
+            ans += pos2 - pos1;
+        }
+        return ans;
+    }
+};
+```
+---
+
+### 6356. 子字符串异或查询
+给一个字符串`s`和一组查询`{[a, b]}`, 找出`s`的最短子串，其十进制表示等于`a ^ b`
+`s = "101101", queries = [[0,5],[1,2]]`
+
+数据范围：
+```c++
+N = s.size() == 1e4
+M = queries.size() == 1e5
+```
+对于每组询问，如果采取滑动窗口的方法或者`KMP`的话，其每组查询时间复杂度为`O(N)`总时间复杂度为`1e9`, 会超时，因此必须在`O(logn)`时间内完成每组的查询
