@@ -419,3 +419,38 @@ N = s.size() == 1e4
 M = queries.size() == 1e5
 ```
 对于每组询问，如果采取滑动窗口的方法或者`KMP`的话，其每组查询时间复杂度为`O(N)`总时间复杂度为`1e9`, 会超时，因此必须在`O(logn)`时间内完成每组的查询
+
+#### 预处理
+可以发现，不同于之前常规的字符串匹配问题，每次`s, p`都是不同的，本题是对于一个`s`，有多组`p`，因此可以预处理出`s`的相关信息。
+对于`s`中的每个索引，可以找出从当前索引往后的`30`位(预处理 `30` 位的原因是因为数据量最大是 `10^9`，对应二进制最多 `30` 位)，因此时间复杂度O(30 * 1e4)就可以处理完所有的情况。
+
+```c++
+class Solution {
+public:
+    typedef pair<int, int> pii;
+    vector<vector<int>> substringXorQueries(string s, vector<vector<int>>& queries) {
+        unordered_map<int, pii>hx;
+        int n = s.size();
+        // 预处理
+        for(int l = 0; l < n; l++) {
+            int x = 0;
+            for(int r = l;  r < min(l + 30, n); r++) {
+                x = x * 2 + (s[r] - '0'); // 当前字串构成的数字
+                if(!hx.count(x)) hx[x] = {l, r};
+                else { // 看当前的是不是更短
+                    auto [a, b] = hx[x];
+                    if(b - a > r - l) hx[x] = {l, r}; 
+                } 
+            }
+        }
+        vector<vector<int>> ans;
+        for(auto x : queries) {
+            int num = x[0] ^ x[1];
+            if(hx.count(num)) ans.push_back({hx[num].first, hx[num].second});
+            else ans.push_back({-1, -1});
+        }
+        return ans;
+    }
+};
+```
+
