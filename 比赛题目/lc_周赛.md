@@ -453,4 +453,34 @@ public:
     }
 };
 ```
+---
+
+### 1124. 表现良好的最长时间段
+大于8表示好，问好的时间大于不好的时间的最长时间段
+`hours = [9,9,6,0,6,6,9], ans = 3, [9,9,6]`
+等价问题:  假设一个数组由`1，-1`，构成，问区间分数和大于`0`的最长区间长度
+
+#### 前缀和 + 哈希表
+```c++
+class Solution {
+public:
+    int longestWPI(vector<int>& hours) {
+        int n = hours.size();
+        int sum = 0; // 记录前缀和
+        int ans = 0;
+        unordered_map<int, int>hx; // 统计某个数出现的索引
+        for(int i = 0; i < hours.size(); i++) {
+            sum += (hours[i] > 8) ? 1 : -1; // 维护前缀和
+            if(sum > 0) {
+                ans = max(ans, i + 1); // 从头到现在都可以
+            }
+            else {  // 找到前面距离最远的j, sum[j] < sum[i], 其中sum[j] = sum[i] - 1是距离i最远的
+                if(hx.count(sum - 1)) ans = max(ans, i - hx[sum - 1]);
+            }
+            if(!hx.count(sum)) hx[sum] = i;
+        }
+        return ans;
+    }
+};
+```
 
