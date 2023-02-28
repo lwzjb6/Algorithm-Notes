@@ -59,7 +59,7 @@ public:
     typedef vector<vector<int>> vvi;
     // 适用于任何合法矩阵的乘法
     vvi mul (vvi& a, vvi& b) {
-        vvi c = vvi(a.size(), vector<int>(b[0].size())); // 定义大小
+        vvi c = vvi(a.size(), vector<int>(b[0].size(), 0)); // 定义大小
         for (int i = 0; i < a.size(); i++) 
             for(int j = 0; j < b[0].size(); j++) 
                 for(int k = 0; k < a[0].size(); k++) 
