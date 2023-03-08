@@ -320,6 +320,10 @@ public:
 ### 337. 打家劫舍 III
 题意：一棵二叉树，树上的每个点都有对应的权值，每个点有两种状态（选中和不选中），问在不能同时选中有父子关系的点的情况下，能选中的点的最大权值和是多少。
 
+#### 树形`DP`
+通常形式为：`f[root]`
+
+思路：
 `f[root]`表示选`root`点的最大值， `g[root]`表示不选`root`点的最大值
 因此状态转移：
 ```c++
@@ -334,7 +338,7 @@ public:
         DFS(root);
         return max(g[root], f[root]);
     }
-    void DFS(TreeNode* root) {
+    void DFS(TreeNode* root) { // 后序遍历
         if (!root) return;
         DFS(root->left);
         DFS(root->right);
@@ -522,9 +526,7 @@ public:
             if (pos == m) return 0;
             pos += 1;
         }
-        return 1;
-            
-        
+        return 1;    
     }
 };
 ```
