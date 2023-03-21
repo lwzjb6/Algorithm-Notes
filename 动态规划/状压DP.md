@@ -192,5 +192,50 @@ public:
     }
 };
 ```
-
 **时间复杂度$O(2^{10} \times 30)$**
+
+---
+
+### acwing 91. 最短Hamilton路径
+给定一个带权无向图，点从`0∼n−1`标号，求起点 `0`到终点 `n−1`的最短 `Hamilton` 路径。
+
+`Hamilton` 路径的定义是从 `0`到 `n−1`不重不漏地经过每个点恰好一次。
+
+状态表示：`f[i][j]:`表示“已经走过的状态为”`i`,当前在`j`的最短路径
+
+答案： `f[(1 << n) - 1][n - 1]`
+状态转移：`last_state = i ^ (1 << j)`
+`f[i][j] = min(f[i][j], f[last_state][k] +  weight[k][j])`
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+int mmap[20][20]; // 邻接矩阵
+int dp[1 << 20][20];
+int main(){
+    int n;
+    cin >> n;
+    for(int i = 0; i < n; i++){
+        for(int j = 0; j < n; j++){
+            cin >> mmap[i][j];
+        }
+    }
+    memset(dp, 0x3f, sizeof(dp));
+    dp[1][0] = 0;
+    for(int i = 1; i < 1 << 20; i++){  // 枚举走过的状态
+        for(int j = 0; j < n; j++){  // 枚举当前状态表示中可能的结束点
+            if((i >> j) & 1){ // 合法性判断
+                int last_state = (1 << j) ^ i; 
+                for(int k = 0; k < n; k++){ 
+                    if((last_state >> k) & 1){ 
+                        dp[i][j] = min(dp[i][j], dp[last_state][k] + mmap[k][j]);
+                    }
+                }
+            }
+        }
+    }
+    cout << dp[(1 << n) - 1][n - 1] << endl;
+    return 0;
+}
+```
+---

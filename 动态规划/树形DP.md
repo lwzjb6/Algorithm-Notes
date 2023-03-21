@@ -78,3 +78,108 @@ public:
 **时间复杂度：$O(n)$** 因为每个节点遍历了一次。
 
 ---
+
+### 337. 打家劫舍 III
+题意：一棵二叉树，树上的每个点都有对应的权值，每个点有两种状态（选中和不选中），问在不能同时选中有父子关系的点的情况下，能选中的点的最大权值和是多少。
+
+#### 树形`DP`
+通常形式为：`f[root]`
+
+思路：
+`f[root]`表示选`root`点的最大值， `g[root]`表示不选`root`点的最大值
+因此状态转移：
+```c++
+f[root] = root->val +  g[root->left] + g[root->right];
+g[root] = max(g[root->left], f[root->left]) + max(g[root->right],f[root->right]);
+```
+```c++
+class Solution {
+public:
+    unordered_map<TreeNode*, int>f, g; // f[root]表示选root点的最大值， g[root]表示不选root点的最大值
+    int rob(TreeNode* root) {
+        DFS(root);
+        return max(g[root], f[root]);
+    }
+    void DFS(TreeNode* root) { // 后序遍历
+        if (!root) return;
+        DFS(root->left);
+        DFS(root->right);
+        f[root] = root->val +  g[root->left] + g[root->right];
+        g[root] = max(g[root->left], f[root->left]) + max(g[root->right], f[root->right]);
+    }
+};
+```
+时间复杂度$O(n)$:相当于对二叉树做了一次后序遍历
+空间复杂度$O(n)$：栈空间 + 哈希表空间
+
+**另一种写法：**  (考虑到每个节点在计算时，仅仅依赖于他的子节点)
+```c++
+class Solution {
+public:
+    vector<int> DFS(TreeNode* root) { // 0:不选，1:选
+        if (!root) return {0, 0};
+        vector<int> left = DFS(root->left);
+        vector<int> right = DFS(root->right);
+        int res1 = max(left[0], left[1]) + max(right[0], right[1]);
+        int res2 = root->val + left[0] + right[0];
+        return {res1, res2};
+    }
+    int rob(TreeNode* root) {
+        auto ans = DFS(root);
+        return max(ans[0], ans[1]);
+    }
+};
+```
+时间复杂度$O(n)$; 空间复杂度$O(n)$:虽说省去了哈希表的空间，但是还有栈空间
+
+---
+
+### acwing 285. 没有上司的舞会
+给定一颗树，每个点有一个价值。
+问根节点和它的儿子不能同时选的最大价值。
+即打家劫舍III 从二叉树变为了多叉树
+
+```c++
+#include<bits/stdc++.h>
+using namespace std;
+const int N = 6010;
+int happy[N];
+bool isson[N];
+
+int h[N], ne[N], e[N], idx;
+void add(int a, int b) {
+    e[idx] = b, ne[idx] = h[a], h[a] = idx++;
+}
+
+int f[N], g[N]; //分别表示选根节点和不选根节点的最大价值
+
+void DFS(int u) {
+    f[u] = happy[u];
+    for(int i = h[u]; i != -1; i = ne[i]) {
+        int j = e[i];
+        
+        DFS(j);
+        f[u] += g[j];
+        g[u] += max(f[j], g[j]);
+    }
+}
+int main() {
+    int n;
+    cin >> n;
+    memset(h, -1, sizeof h);
+    for(int i = 1; i <= n; i++) cin >> happy[i]; // 读入价值
+    for(int i = 1; i < n; i++) {
+        int a, b;
+        cin >> a >> b;
+        add(b, a);
+        isson[a] = 1;  // 便于找root
+    }
+    int root = -1;
+    for(int i = 1; i <= n; i++) if (!isson[i]) root = i; // 找root
+    DFS(root);
+    cout << max(f[root], g[root]) << endl;
+    return 0;
+}
+```
+---
+
