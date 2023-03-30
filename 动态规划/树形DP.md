@@ -25,6 +25,28 @@ public:
 ```
 ---
 
+### 124. 二叉树中的最大路径和
+找到二叉树中的最大的路径的和，节点值可能为负数
+```c++
+class Solution {
+public:
+    int maxPathSum(TreeNode* root) {
+        unordered_map<TreeNode*, int>f;
+        int ans = INT_MIN;
+        function<int(TreeNode*)>DFS = [&](TreeNode* root){
+            if(!root)  return 0;
+            int lmax = max(DFS(root->left), 0); // 因为存在负数，所以可以不选左子树
+            int rmax = max(DFS(root->right), 0);
+            ans = max(ans, lmax + rmax + root->val); 
+            f[root] = max(max(lmax, rmax) + root->val, root->val); // 是否不考虑当前节点往下的点
+            return f[root];
+        };    
+        DFS(root);
+        return ans;
+    }
+};
+```
+
 #### 学习树的直径
 ### 6294. 最大价值和与最小价值和的差值
 `n = 6, edges = [[0,1],[1,2],[1,3],[3,4],[3,5]], price = [9,8,7,6,10,5], ans = 24`
