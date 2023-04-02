@@ -763,28 +763,3 @@ public:
 ```
 ---
 
-### 375. 猜数字大小 II
-我从 `1` 到 `n` 之间选择一个数字。你来猜我选了哪个数字。
-如果猜`x`,但是猜错了，需要支付`x`，问在保证可以猜对的情况下最少支付多少钱。
-
-#### DP
-```c++
-class Solution {
-public:
-    int getMoneyAmount(int n) {
-        vector<vector<int>>dp(n + 1, vector<int>(n + 1, 0));
-        // dp[i][j]：猜区间i~j之间的数字，最少需要支付多少。  dp[i][i] = 0
-        for(int len = 2; len <= n; len++) {
-            for(int i = 1; i + len - 1 <= n; i++) {
-                int j = i + len - 1;
-                dp[i][j] = min(i + dp[i + 1][j], j + dp[i][j - 1]); // 边界
-                for(int k = i + 1; k < j; k++) { // 以k作为分割点
-                    dp[i][j] = min(dp[i][j], k + max(dp[i][k - 1], dp[k + 1][j]));
-                }
-            }
-        }
-        return dp[1][n];
-    }
-};
-```
----
