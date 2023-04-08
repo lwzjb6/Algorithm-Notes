@@ -196,6 +196,120 @@ public:
 
 ---
 
+### 1125. 最小的必要团队
+公司需要很多技能，每个人会部分技能，问最少需要多少人可以满足公司要求的全部技能
+
+`req_skills = ["java","c","c++"]`
+`people = [["java"],["c"],["c","c++"]]`
+`ans = [0, 2]`
+
+#### 思路1：状态压缩 + 01背包 + 求具体方案
+
+状态表示：`f[i][j]`: 表示考虑前`i`数字，体积为`j`的方案数。
+状态转移：`f[i][j] = f[i - 1][j] + f[i - 1][j & (~mask)]`
+
+解释：`f[i - 1][j & (~mask)]` 为啥是`j & (~mask)`而不是`j ^ (mask)`
+
+`j & (~mask)`表示体积`j`中去掉`mask`的剩余体积
+`eg: j = 110 mask = 011` 剩余体积为`110 & (100) = 100`
+
+区别在于如果用`j^(mask)` 说明技能不能多，即`110` 的状态不能由`011` 转移过来，但实际上本题场景可以`110`可以由`011 + 100`得到，因此用`j & (~mask)`
+
+```c++
+class Solution {
+public:
+    using ll = long long;
+    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {
+        unordered_map<string, int>hx;
+        int cnt = 0;
+        for(auto x : req_skills) hx[x] = cnt++;
+
+        // 计算每个人的mask
+        vector<ll>masks;
+        for(auto x : people) {
+            ll res = 0;
+            for(auto y : x) res |= (1 << hx[y]);
+            masks.push_back(res);
+        }
+        
+        // 背包
+        int n = masks.size(), m = (1 << cnt) - 1;
+        ll f[n + 1][m + 1];
+        memset(f, 0x3f, sizeof f);
+        f[0][0] = 0;
+        for(int i = 1; i <= n; i++) {
+            auto x = masks[i - 1];
+            for(int j = 0; j <= m; j++){
+                f[i][j] = min(f[i - 1][j], (ll) f[i - 1][j & (~x)] + 1);
+            }
+        }
+
+        // 求具体方案
+        vector<int>ans; 
+        int curm = m;
+        for(int i = n ; i >= 1; i--) {
+            int x = masks[i - 1];
+            if(f[i][curm] == (ll) f[i - 1][curm & (~x)] + 1) {
+                curm = curm & (~x);
+                ans.push_back(i - 1);
+            }
+        }
+        return ans;
+    }
+};
+```
+
+#### 思路2： 状压DP
+即用当前的数更新其能更新的状态。
+```c++
+class Solution {
+public:
+    using ll = long long;
+    int cal(ll x) { // 计算1的个数
+        int ans = 0;
+        while(x) {
+            x = x & (x - 1);
+            ans ++;
+        }
+        return ans;
+    }
+    vector<int> smallestSufficientTeam(vector<string>& req_skills, vector<vector<string>>& people) {
+        unordered_map<string, int>hx;
+        int cnt = 0;
+        for(auto x : req_skills) hx[x] = cnt++;
+
+        // 计算每个人的mask
+        vector<ll>masks;
+        for(auto x : people) {
+            ll res = 0;
+            for(auto y : x) res |= (1 << hx[y]);
+            masks.push_back(res);
+        }
+        
+        // 状压DP
+        int m = (1 << cnt) - 1;
+        vector<ll>f(m + 1, INT_MAX); // 表示集合为j的情况的最少组成个数，f[j] = 101, 表示最少需要2个人，ans = [0, 2]
+        f[0] = 0;
+        for(int j = 0; j <= m; j++) { // 依次考虑体积
+            for(int i = 0; i < masks.size(); i++) {  // 用所有的物品更新其能更新到的体积
+                int x = masks[i];
+                if(cal(f[j | x]) > cal(f[j]) + 1)
+                    f[j | x] = f[j] | (1LL << i);  // 用 x 更新 f[j | x]
+            }
+        }
+        
+        // 求具体方案 遍历f[m], 1对应的位就是答案
+        vector<int>ans;
+        for(int i = 0; i < masks.size(); i++) {
+            if((f[m] >> i) & 1) ans.push_back(i);
+        }
+        return ans;
+    }
+};
+```
+---
+
+
 ### acwing 91. 最短Hamilton路径
 给定一个带权无向图，点从`0∼n−1`标号，求起点 `0`到终点 `n−1`的最短 `Hamilton` 路径。
 

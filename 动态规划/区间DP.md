@@ -116,7 +116,7 @@ public:
                 for(int m = i; m < j; m += k - 1) { // 枚举分割点
                     f[i][j] = min(f[i][j], f[i][m] + f[m + 1][j]);
                 }
-                if((len - 1) % (k - 1) == 0) f[i][j] += s[j + 1] - s[i];
+                if((len - 1) % (k - 1) == 0) f[i][j] += s[j + 1] - s[i]; // 可以合并为一堆
             }
         }
         return f[0][n - 1];
