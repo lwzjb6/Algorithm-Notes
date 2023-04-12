@@ -152,6 +152,25 @@ public:
     }
 };
 ```
+```c++
+class Solution {
+public:
+    using pii = pair<int, int>;
+    pii DFS(TreeNode* root) {
+        if(!root) return {0, 0};
+        auto [lf, lg] = DFS(root->left);
+        auto [rf, rg] = DFS(root->right);
+
+        int f = lg + rg + root->val;
+        int g = max(lg, lf) + max(rg, rf);
+        return {f, g};
+    }
+    int rob(TreeNode* root) {
+        auto [f, g] = DFS(root);
+        return max(f, g);
+    }
+};
+```
 时间复杂度$O(n)$; 空间复杂度$O(n)$:虽说省去了哈希表的空间，但是还有栈空间
 
 ---
