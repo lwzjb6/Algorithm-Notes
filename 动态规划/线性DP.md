@@ -538,7 +538,7 @@ class Solution {
 public:
     int countSubstrings(string s) {
         int n = s.size();
-        vector<vector<int>>f(n + 1, vector<int>(n + 1, 0));
+        vector<vector<int>>f(n, vector<int>(n, 0));
         int ans = 0;
         // 注意遍历顺序 判断f[i][j] 需要知道f[i + 1][j - 1]
         for (int i = n - 1; i >= 0; i--) { 
@@ -553,6 +553,27 @@ public:
                         f[i][j] = 1;
                     }
                 }
+            }
+        }
+        return ans;
+    }
+};
+```
+
+回文字符串区间`DP`的模板
+```c++
+class Solution {
+public:
+    int countSubstrings(string s) {
+        int n = s.size();
+        vector<vector<int>>f(n, vector<int>(n, 1));
+        
+        int ans = 0;
+        for(int i = n - 1; i >= 0; i--) {
+            ans++; // f[i][i] = 1;
+            for(int j = i + 1; j < n; j++) {
+                f[i][j] = f[i + 1][j - 1] && (s[i] == s[j]);
+                if(f[i][j]) ans++;
             }
         }
         return ans;
