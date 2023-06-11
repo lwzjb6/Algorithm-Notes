@@ -353,3 +353,168 @@ int main(){
 }
 ```
 ---
+
+
+### 2172. 数组的最大与和
+`nums = [1,2,3,4,5,6], numSlots = 3, ans = 9`
+给一组物品，每个物品的号码为`nums[i]`, 将其放入篮子中，每个篮子中物品的数量不能超过2个。返回将 `nums` 中所有数放入 `numSlots` 个篮子中的最大**与和**。**与和**定义为每个数与它所在篮子编号的 按位与运算 结果之和。
+
+```
+可行的方案是 [1, 4] 放入篮子 1 中，[2, 6] 放入篮子 2 中，[3, 5] 放入篮子 3 中。
+(1 AND 1) + (4 AND 1) + (2 AND 2) + (6 AND 2) + (3 AND 3) + (5 AND 3) = 1 + 0 + 2 + 2 + 3 + 1 = 9 。
+```
+
+#### 状压DP
+
+```c++
+class Solution {
+public:
+    int count_1(int x) {
+        int res = 0;
+        while(x) {
+            x -= (x & -x);
+            res++;
+        }
+        return res;
+    }
+    // 将问题转化为每个篮子变为两份，nid / 2 = oid, 选择把每个物品放到对应的篮子中
+    int maximumANDSum(vector<int>& nums, int numSlots) {
+        int n = nums.size();
+        int m = 1 << (2 * numSlots);
+        //f[i]表示将nums的前c个数字(c = i的1的个数)放到篮子中，且放了数字的篮子集合为i时的最大与和。
+        //f[1011] 表示将前3个数字放到篮子中，且数字在篮子中的分布方式等于1011的最大与和
+        vector<int>f(m, 0);
+        int ans = 0;
+        for(int i = 0; i < m; i++) { // 枚举状态
+            int c = count_1(i); // 当前物品的编号
+            if(c >= nums.size()) continue;
+            // 计算状态的价值
+            for(int j = 0; j < 2 * numSlots; j++) {
+                int res = 0;
+                if(((i >> j) & 1) == 0) { // 枚举空篮子j，放当前的物品c
+                    int s = i | (1 << j); // 假设把物品c当到篮子j
+                    f[s] = max(f[s], f[i] + (nums[c] & (j / 2 + 1))); // 篮子j对应的真实篮子编号为 j / 2 + 1
+                    ans = max(ans, f[s]);
+                }
+            }
+        }
+        return ans;
+    }
+};
+```
+---
+
+
+### 1879. 两个数组最小的异或值之和
+将 `nums2` 中的元素重新排列，使得 **异或值之和** 最小。
+两个数组`nums1, nums2`的异或值之和定义为对应位置元素求异或后的和
+
+#### 同上题思路
+```c++
+class Solution {
+public:
+    int count_1(int x) {
+        int res = 0;
+        while(x) {
+            x -= (x & -x);
+            res++;
+        }
+        return res;
+    }
+    int minimumXORSum(vector<int>& nums1, vector<int>& nums2) {
+        int n = nums1.size();
+        vector<int>f((1 << n), INT_MAX);
+
+        f[0] = 0;
+        for (int i = 0; i < (1 << n); i++) {
+            int c = count_1(i);
+            for (int j = 0; j < n; j++) {
+                if (((i >> j) & 1) == 0) { // 将第c个物品放入第j位
+                    int s = i | (1 << j);
+                    f[s] = min(f[s], f[i] + (nums1[c] ^ nums2[j]));
+                }
+            }
+        }
+        return f[(1 << n) - 1];
+    }
+};
+```
+---
+
+#### 题型：将集合划分为多个子集，使得子集的最大值最小
+
+### 2305. 公平分发饼干
+`cookies = [8,15,10,20,8], k = 2, ans = 31`
+`最优方案是 [8,15,8] 和 [10,20]`
+将`cookies`中的元素分给`k`个人，**不公平程度**定义为所有人中获得饼干的最大值，求最小的不公平程度。
+
+(1) 首先预处理出每种分配方案的`sum`
+`eg sum[1011] = cookies[3] + cookies[1] + cookies[0]`
+(2) `f[i][j]:`考虑前`i`个孩子，分配的饼干集合为`j`时的最小不公平程度。
+(3) 状态转移：枚举给当前用户`i`的所有的可行分配方案`s`
+$f[i][j] = min\{\quad max(f[i - 1][j / s], sum[s])\}$
+```
+eg f[i][101] = min{ max(f[i - 1][101] + sum[000]),
+                    max(f[i - 1][100] + sum[001]),
+                    max(f[i - 1][001] + sum[100]),
+                    max(f[i - 1][000] + sum[101])}
+```
+
+```c++
+class Solution {
+public:
+    int distributeCookies(vector<int>& cookies, int k) {
+        int n = cookies.size();
+        // 预处理sum数组
+        vector<int>sum(1 << n, 0);
+        for (int i = 0; i < (1 << n); i++) 
+            for(int j = 0; j < n; j++) 
+                if(i >> j & 1) sum[i] += cookies[j];
+        
+        vector<vector<int>>f(k + 1, vector<int>(1 << n, 0));
+        // 边界条件
+        for(int j = 0; j < (1 << n); j++) f[1][j] = sum[j];
+
+        for (int i = 2; i <= k; i++) { // 依次考虑每个人
+            for (int j = 1; j < (1 << n); j++) { // 枚举分发方式
+                f[i][j] = INT_MAX;
+                for(int s = j; s; s = (s - 1) & j) { // 枚举当前人的分配方式s, s 必须是j的子集
+                    f[i][j] = min(f[i][j], max(f[i - 1][j ^ s], sum[s]));
+                }
+            }
+        }
+        return f[k][(1 << n) - 1];
+    }
+};
+```
+---
+
+
+### 1723. 完成所有工作的最短时间
+`jobs = [1,2,4,7,8], k = 2, ans = 11`
+将工作分给`k`个人，最小化最大工作时间
+
+#### 和上题一样
+**倒序枚举体积优化为一维**
+```c++
+class Solution {
+public:
+    int minimumTimeRequired(vector<int>& jobs, int k) {
+        int n = jobs.size();
+        vector<int>sum(1 << n, 0); // 预处理所有分配方案的工作时长
+        for(int i = 1; i < (1 << n); i++) 
+            for(int j = 0; j < n; j++)
+                if(i >> j & 1) sum[i] += jobs[j];
+        
+        vector<int>f(sum); // 用sum初始化第一个人的情况
+        for(int i = 2; i <= k; i++) {
+            for(int j = (1 << n) - 1; j > 0; j--) { // 倒序枚举分配方案
+                for(int s = j; s; s = (s - 1) & j) {
+                    f[j] = min(f[j], max(f[j ^ s], sum[s]));
+                }
+            }
+        }
+        return f.back();
+    }
+};
+```

@@ -112,3 +112,80 @@ public:
     }
 };
 ```
+---
+
+### 1263. 推箱子
+就是经典的推箱子游戏，但不同于常规的理解。
+题目要求返回的是推箱子的最少次数，而不是人移动的步数。
+
+#### 双端队列`BFS`
+为什么用双端队列`deque`？
+题目要保证箱子移动的总步数`bd`最少，其次是人的移动步数`md`尽可能最优，因为需要保证上述两个元素构成的二元组`(bd, md)`在队列中保持单调性。即`bd`小的在队列的前面，`bd`相同时，按`md`排列。
+因此，如果用传统队列，直接往队尾放，会破坏上述单调性。
+所以采用`deque`对于每个箱子状态，如果推动箱子，那么推动次数加1，并且新的状态加入到**队列的末尾**；如果没推动箱子，那么推动次数不变，新的状态加入到**队列的头部**。
+
+```c++
+class Solution {
+public:
+    // 注意：题目要求返回的是箱子被推动的次数，而不是人移动的步数
+
+    bool vis[410][410]; // 箱子和人的组合状态是否访问过，箱子一共m * n个状态，人也是m * n个状态
+    int minPushBox(vector<vector<char>>& grid) {
+        int n = grid.size(), m = grid[0].size();
+        memset(vis, 0, sizeof(vis));
+        int mx, my, bx, by; // 人和箱子的坐标
+        // 找人和箱子的起始坐标
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (grid[i][j] == 'S') mx = i, my = j;
+                else if(grid[i][j] == 'B') bx = i, by = j;
+            }
+        }
+        // 定义两个辅助函数
+        auto f = [&](int x, int y) -> int { // 把一个坐标转化为唯一个数
+            return x * m + y;
+        };
+
+        auto check = [&](int x, int y) -> bool {  // 判断一个坐标是否合法
+            if(x >= 0 && x < n && y >= 0 && y < m && grid[x][y] != '#') return 1;
+            else return 0;
+        };
+
+        int dir[5] = {-1, 0, 1, 0, -1};
+        deque<tuple<int, int, int>>q; // (人的位置，箱子位置，当前推箱子的总步数)
+        q.push_back({f(mx, my), f(bx, by), 0});
+        vis[f(mx, my)][f(bx, by)] = 1;
+        
+        while (q.size()) {
+            auto [man, box, d] = q.front();
+            q.pop_front();
+
+            mx = man / m, my = man % m;
+            bx = box / m, by = box % m;
+
+            // 终点判断
+            if (grid[bx][by] == 'T') return d;
+
+            // 状态转移, 考虑人即可
+            for (int i = 0; i < 4; i++) {
+                int nmx = mx + dir[i], nmy = my + dir[i + 1];
+                if (!check(nmx, nmy)) continue;
+                if (nmx == bx && nmy == by) { // 推动了箱子
+                    int nbx = bx + dir[i], nby = by + dir[i + 1];
+                    // 如果箱子的下一个位置合法，并且组合状态没有被访问过
+                    if (check(nbx, nby) && !vis[f(nmx, nmy)][f(nbx, nby)]) {
+                        q.push_back({f(nmx, nmy), f(nbx, nby), d + 1}); // 箱子移动次数+1
+                        vis[f(nmx, nmy)][f(nbx, nby)] = 1;
+                    }
+                }
+                else if (!vis[f(nmx, nmy)][f(bx, by)]) { // 人动，箱子不动
+                    q.push_front({f(nmx, nmy), f(bx, by), d}); // 箱子没动，d不加
+                    vis[f(nmx, nmy)][f(bx, by)] = 1;
+                }
+            }
+        } 
+        return -1;
+    }
+};
+```
+---

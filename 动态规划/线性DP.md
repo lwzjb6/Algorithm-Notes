@@ -316,6 +316,32 @@ public:
 ```
 ---
 
+
+### 22. 括号生成
+生成有效的括号方案
+
+#### 卡特兰数 + DP
+
+```c++
+class Solution {
+public:
+    vector<string> generateParenthesis(int n) {
+        vector<vector<string>>f(n + 1);
+        f[0] = {""}, f[1] = {"()"};
+        for (int i = 2; i <= n; i++) {
+            for(int j = 0; j < i; j++) {
+                int k = i - j - 1;
+                auto &a = f[j], &b = f[k];
+                for(auto x : a) for(auto y : b)
+                    f[i].push_back(x + "(" + y + ")");
+            }
+        }
+        return f[n];
+    }
+};
+```
+---
+
 ### 718. 最长重复子数组
 题意：找到两个数组中最长的公共子数组，数组相比于序列要求连续
 
@@ -784,3 +810,48 @@ public:
 ```
 ---
 
+###  2167. 移除所有载有违禁货物车厢所需的最少时间
+
+把序列中的1全部给删掉，求最少的次数
+（1）从左右两段删除，消耗一次
+（2）从中间删除，消耗两次
+
+`s = "1100101", ans = 5`
+
+基本思想：
+先从左边求一下移除到第i位的最少次数`f[i]`
+```
+// 选操作1.从左一直删除到当前位置，选操作2， 之前的次数 + 当前的2次
+if s[i] == 1: f[i] = min(i + 1. f[i - 1] + 2)
+if s[i] == 0: f[i] = f[i - 1]
+```
+右边同理。之后求合适的分割点
+
+```c++
+class Solution {
+public:
+    int minimumTime(string s) {
+        int n = s.size();
+        vector<int>f(n), b(n);
+        if(n == 1) return s[0] - '0';
+        f[0] = s[0] - '0';
+        for(int i = 1; i < n; i++) {
+            if(s[i] == '0') f[i] = f[i - 1];
+            else f[i] = min(i + 1, f[i - 1] + 2);
+        }
+        b[n - 1] = s[n - 1] - '0';
+        for(int i = n - 2; i >= 0; i--) {
+            if(s[i] == '0') b[i] = b[i + 1];
+            else b[i] = min(n - i, b[i + 1] + 2);
+        }
+        int ans = INT_MAX;
+        for(int i = 0; i < n - 1; i++) {
+            if(s[i] == '1' || s[i + 1] == '1') {
+                ans = min(f[i] + b[i + 1], ans);
+            }
+        }
+        return (ans == INT_MAX) ? 0 : ans;
+    }
+};
+```
+---

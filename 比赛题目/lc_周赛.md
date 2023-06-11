@@ -466,3 +466,42 @@ public:
 ```
 ---
 
+
+### 2611. 老鼠和奶酪
+`reward1 = [1,1,3,4], reward2 = [4,4,1,1], k = 2`
+`ans = 15`
+有两只老鼠，每个奶酪给它后的奖励是`reward`, 问第一只老鼠恰好吃掉 `k` 块奶酪的情况下，最大得分为多少。
+
+#### 思路1：DP
+```c++
+class Solution {
+public:
+    int miceAndCheese(vector<int>& r1, vector<int>& r2, int k) {
+        int n = r1.size();
+        int f[n + 1][k + 1];
+        memset(f, -1, sizeof(f));
+        f[0][0] = 0;
+        for(int i = 1; i <= n; i++) f[i][0] = f[i - 1][0] + r2[i - 1];
+        for(int i = 1; i <= n; i++) {
+            for(int j = 1; j <= k; j++) {
+                f[i][j] = max(f[i - 1][j] + r2[i - 1], f[i - 1][j - 1] + r1[i - 1]);
+            }
+        }
+        return f[n][k];
+    }
+};
+```
+
+#### 思路2：贪心
+先全部给第二只老鼠，之后计算`reward1[i] - reward2[i]`然后贪心选增量最大的`k`个即可
+```c++
+class Solution {
+public:
+    int miceAndCheese(vector<int>& r1, vector<int>& r2, int k) {
+        for(int i = 0; i < r1.size(); i++) r1[i] -= r2[i];
+        nth_element(r1.begin(), r1.end() - k, r1.end()); // 快速选择
+        return accumulate(r2.begin(), r2.end(), 0) + accumulate(r1.end() - k, r1.end(), 0);
+    }
+};
+```
+---

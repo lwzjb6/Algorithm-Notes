@@ -290,3 +290,45 @@ public:
 ```
 ---
 
+
+### 面试题 08.14. 布尔运算
+`s = "1^0|0|1", result = 0, ans = 2`
+给定一个运算，可以按任意方式加括号，改变计算的顺序，问有多少种方式计算出得到`result`
+
+```c++
+class Solution {
+public:
+    int countEval(string s, int result) {
+        int n = s.size();
+        int f[n][n][2]; // 区间[i,j].计算结果为0,1的方案数
+        memset(f, 0, sizeof(f));
+        // init
+        for(int i = 0; i < n; i += 2){
+            if(s[i] == '0' || s[i] == '1')
+                f[i][i][s[i] - '0'] = 1;
+        } 
+        // 区间DP， 保证起始点和终点i,j均指向数字，分割点k指向运算符
+        for(int len = 3; len <= n; len += 2) {
+            for(int i = 0; i + len - 1 < n; i += 2) { // start
+                int j =  i + len - 1; // end
+                for(int k = i + 1; k < j; k += 2) { // 分割点
+                    if(s[k] == '&') {
+                        f[i][j][0] += f[i][k - 1][0] * f[k + 1][j][0] + f[i][k - 1][1] * f[k + 1][j][0] + f[i][k - 1][0] * f[k + 1][j][1];
+                        f[i][j][1] += f[i][k - 1][1] * f[k + 1][j][1];
+                    }
+                    else if(s[k] == '|') {
+                        f[i][j][0] += f[i][k - 1][0] * f[k + 1][j][0];
+                        f[i][j][1] += f[i][k - 1][0] * f[k + 1][j][1] + f[i][k - 1][1] * f[k + 1][j][0] + f[i][k - 1][1] * f[k + 1][j][1];
+                    }
+                    else if(s[k] == '^') {
+                        f[i][j][0] += f[i][k - 1][0] * f[k + 1][j][0] + f[i][k - 1][1] * f[k + 1][j][1];
+                        f[i][j][1] += f[i][k - 1][0] * f[k + 1][j][1] + f[i][k - 1][1] * f[k + 1][j][0];
+                    }
+                }
+            }
+        }
+        return f[0][n - 1][result];
+    }
+};
+```
+---

@@ -132,6 +132,8 @@ public:
 问最多套多少个。
 很直接的思路就是先对第一维排序，然后对第二维求LIS
 
+注意：因为第一维排序后并不能保证第一维严格单调，为了避免进行第二维选择LIS时，第一维的数值相同。在第一维相同时，第二维从大到小排序，从而保证不会选到第一维相同的。
+
 ```c++
 class Solution {
 public:
@@ -149,6 +151,30 @@ public:
             else *lower_bound(f.begin(), f.end(), x) = x;
         }
         return f.size();
+    }
+};
+```
+
+### 面试题 08.13. 堆箱子
+把上述问题推广为3维的，长宽高都必须小于才能发放到上面，问堆的最大高度。
+`box = [[1, 1, 1], [2, 2, 2], [3, 3, 3]], ans = 6`
+
+```c++
+class Solution {
+public:
+    int pileBox(vector<vector<int>>& box) {
+        int n = box.size();
+        sort(box.begin(), box.end());
+        vector<int>f(n, 0);
+        for(int i = 0; i < n; i++) f[i] = box[i][2];
+
+        for(int i = 1; i < n; i++) {
+            for(int j = 0; j < i; j++) {
+                if(box[i][0] > box[j][0] && box[i][1] > box[j][1] && box[i][2] > box[j][2]) 
+                f[i] = max(f[i], f[j] + box[i][2]);
+            }
+        }
+        return *max_element(f.begin(), f.end());
     }
 };
 ```
