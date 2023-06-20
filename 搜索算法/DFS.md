@@ -627,4 +627,114 @@ public:
 ```
 ---
 
+### 1254. 统计封闭岛屿的数目
+统计被`1`包围的联通块`0`的个数，边界视为不包围。类似于围棋
 
+#### 思路1：DFS由外向内
+先从边界的`0`开始, `DFS`把能走到的地方标记为`1`.
+然后用`DFS`求`0`连通块的个数
+
+```c++
+class Solution {
+public:
+    int closedIsland(vector<vector<int>>& grid) {
+        int n = grid.size(), m = grid[0].size();
+        function<void(int, int)>DFS = [&](int x, int y) {
+            if(x < 0 || x >= n || y < 0 || y >= m || grid[x][y] == 1) return;
+            grid[x][y] = 1;
+            DFS(x + 1, y), DFS(x, y + 1), DFS(x - 1, y), DFS(x, y - 1);
+        };
+        //  由外向内
+        for(int j = 0; j < m; j++) {
+            DFS(0, j); DFS(n - 1, j);
+        }
+        for(int i = 0; i < n; i++) {
+            DFS(i, 0); DFS(i, m- 1);
+        }
+        // 由内向外
+        int ans = 0;
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < m; j++) {
+                if(grid[i][j] == 0) {
+                    ans++;
+                    DFS(i, j);
+                }
+            }
+        }
+        return ans;
+    }
+};
+```
+
+#### 思路2：DFS 由内向外
+从某个点开始向四个方向`DFS`，如果任意方向可以走到边界，标记为`0`
+
+```c++
+class Solution {
+public:
+    int closedIsland(vector<vector<int>>& grid) {
+        int n = grid.size(), m = grid[0].size();
+        int dir[5] = {-1, 0, 1, 0, -1};
+        function<bool(int, int)>DFS = [&](int x, int y) {
+            if(x == 0 || x == n - 1 || y == 0 || y == m - 1 || grid[x][y] == 1) return 0;
+            grid[x][y] = 1;
+            int res = 1;
+            for(int i = 0; i < 4; i++) {
+                int nx = x + dir[i], ny = y + dir[i + 1];
+                if(nx >= 0 && nx < n && ny >= 0 && ny < m && grid[nx][ny] == 0) {
+                    res &= DFS(nx, ny); // 有一个方向不连通，就不连通
+                }
+            }
+            return res;
+        };
+
+        int ans = 0;
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < m; j++) {
+                ans += DFS(i, j);
+            }
+        }
+        return ans;
+    }
+};
+```
+
+**`BFS`也可以做 类似思路2**
+
+相似的题：
+1020. 飞地的数量
+200. 岛屿数量
+           
+---
+
+
+### 695. 岛屿的最大面积
+统计最大的连通块的数量。
+
+```c++
+class Solution {
+public:
+    int maxAreaOfIsland(vector<vector<int>>& grid) {
+        int n = grid.size(), m = grid[0].size();
+        int dir[5] = {-1, 0, 1, 0, -1};
+        function<int(int, int)>DFS = [&](int x, int y) { // 从当前x,y出发最多走几格
+            int res = 1;
+            grid[x][y] = 0;
+            for(int i = 0; i < 4; i++) {
+                int nx = x + dir[i], ny = y + dir[i + 1];
+                if(nx >= 0 && nx < n && ny >= 0 && ny < m && grid[nx][ny] == 1) {
+                    res += DFS(nx, ny);
+                }
+            }
+            return res;
+        };
+        int ans = 0;
+        for(int i = 0; i < n; i++) 
+            for(int j = 0; j < m; j++) 
+                if(grid[i][j] == 1) 
+                    ans = max(ans, DFS(i, j));
+        return ans;
+    }
+};
+```
+---

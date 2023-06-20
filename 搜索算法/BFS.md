@@ -189,3 +189,140 @@ public:
 };
 ```
 ---
+
+### 2258. 逃离火灾
+二维迷宫，有空位，有火，有墙。每次人和火往四个方向移动，人先火后，均不能到墙。人要从左上角到右下角，问人最多可以在起点等待几秒并到达终点。
+
+#### 二分答案 + 多源BFS
+注意火的移动的更新方式
+
+```c++
+class Solution {
+public:
+    using pii = pair<int, int>;
+    vector<int>dir = {-1, 0, 1, 0, -1};
+    bool check(vector<vector<int>>& grid, int t) {
+        int n = grid.size(), m = grid[0].size();
+        bool fire[n][m]; // 拷贝一份新的，不能修改旧的
+        memset(fire, 0, sizeof(fire));
+        vector<pii>lf; // 上一时刻的火苗和人的位置集合
+
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < m; j++) {
+                if(grid[i][j] == 1) {
+                    lf.push_back({i, j});
+                    fire[i][j] = 1;
+                }
+            }
+        }
+
+        auto spread_fire = [&](){
+            vector<pii>cf;
+            for(auto &[x, y] : lf) {
+                for(int i = 0; i < 4; i++) {
+                    int nx = x + dir[i], ny = y + dir[i + 1];
+                    if(nx >= 0 && nx < n && ny >= 0 && ny < m && !fire[nx][ny] && grid[nx][ny] == 0) {
+                        fire[nx][ny] = 1;
+                        cf.push_back({nx, ny});
+                    }
+                }
+            }
+            lf = move(cf);
+        };
+
+        // 先走t步
+        while(t-- && lf.size()) spread_fire();
+        if(fire[0][0]) return 0; // 起点着火了
+
+        // 人开始走
+        bool vis[n][m];
+        memset(vis, 0, sizeof(vis));
+        queue<pii>q;
+        q.push({0, 0});
+        vis[0][0] = 1;
+        while(q.size()) {
+            int len = q.size(); // 需要控制好每一轮过后，火也要传播一次
+            while(len--) {
+                auto [x, y] = q.front();
+                q.pop();
+
+                if(fire[x][y]) continue;
+                for(int i = 0; i < 4; i++) {
+                    int nx = x + dir[i], ny = y + dir[i + 1];
+                    if(nx >= 0 && nx < n && ny >= 0 && ny < m && !fire[nx][ny] && grid[nx][ny] == 0 && !vis[nx][ny] ) {
+                        if(nx == n - 1 && ny == m - 1) return 1; // 到终点了
+                        q.push({nx, ny});
+                        vis[nx][ny] = 1;
+                    }
+                }
+            }
+            spread_fire(); // 一轮结束
+        }
+        return 0;    
+    }
+    int maximumMinutes(vector<vector<int>>& grid) {
+        int n = grid.size(), m = grid[0].size();
+        int l = -1, r = m * n;
+        while(l < r) {
+            int mid = (l + r + 1) >> 1;
+            if(check(grid, mid)) l = mid;
+            else r = mid - 1;
+        }
+        if(l == m * n) return 1e9;
+        else return l; 
+    }
+};
+```
+---
+
+
+### 1162. 地图分析
+`grid = [[1,0,1],[0,0,0],[1,0,1]], ans = 2`
+`01`构成的网络，找到距离1最远的0，返回他们之间的距离。
+或者理解为：`1`表示病毒，问多长时间能将整个网络覆盖满
+
+#### 多源BFS
+```c++
+class Solution {
+public:
+    using pii = pair<int, int>;
+    int dir[5] = {-1, 0, 1, 0, -1};
+    int maxDistance(vector<vector<int>>& grid) {
+        int n = grid.size(), m = grid[0].size();
+        bool vis[n][m];
+        memset(vis, 0, sizeof vis);
+
+        queue<pii>q;
+        // 所有 1 入队
+        for(int i = 0; i < n; i++) {
+            for(int j = 0; j < m; j++) {
+                if(grid[i][j] == 1) {
+                    q.push({i, j});
+                    vis[i][j] = 1;
+                }
+            }
+        }
+        if(q.size() == 0 || q.size() == n * m) return -1;
+
+        int cnt = 0; // 最多走几步
+        while(q.size()) {
+            int len = q.size(); // 控制把旧数据用完
+            while(len--) {
+                auto [x, y] = q.front();
+                q.pop();
+
+                for(int i = 0; i < 4; i++) {
+                    int nx = x + dir[i], ny = y + dir[i + 1];
+                    if(nx >= 0 && nx < n && ny >= 0 && ny < m && !vis[nx][ny]) {
+                        q.push({nx, ny});
+                        vis[nx][ny] = 1;
+                    }
+                }
+            }
+            cnt++;
+        }
+        return cnt - 1;
+    }
+};
+```
+---

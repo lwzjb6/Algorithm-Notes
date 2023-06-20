@@ -51,6 +51,73 @@ public:
 ```
 ---
 
+### 2407. 最长递增子序列 II
+在普通的`LIS`的基础[严格递增]上加了条件：
+子序列中相邻元素的差值不超过 `k` 。
+`nums = [4,2,1,4,3,4,5,8,15], k = 3`
+`ans = 5, details = [1,3,4,5,8]`
+
+核心思想：如果当前考虑的数是`a[i]`, 需要快速找到`dp[a[i] - k : a[i] - 1]`中的最大值`mx`, `dp[a[i]] = mx + 1`. 核心就是用线段树维护`dp`数组
+
+#### 线段树快速求区间最大值
+```c++
+class Solution {
+public:
+    // 线段树求最大值模板
+    static const int N = 1e5 + 10;
+    using ll = long long;
+    int m, p;
+
+    // 线段树节点
+    struct node{
+        int l, r;
+        int v; // 维护最大值
+    };
+    node tr[4 * N]; // 开4倍序列的大小
+    void build(int u, int l, int r) {
+        tr[u] = {l, r}; 
+        if(l == r) return;
+        int mid = l + r >> 1;
+        build(u << 1, l, mid);
+        build(u << 1 | 1, mid + 1, r);
+    }
+
+    void pushup(int u) { // 根据u的子节点信息更新u节点
+        tr[u].v = max(tr[u << 1].v, tr[u << 1 | 1].v);
+    }
+
+    void modify(int u, int x, int v) {
+        if(tr[u].l == tr[u].r) tr[u].v = v; // 叶子节点
+        else {
+            int mid = tr[u].l + tr[u].r >> 1;
+            if(x <= mid) modify(u << 1, x, v); // 索引x在左子树
+            else modify(u << 1 | 1, x, v); // 索引x在右子树
+            pushup(u);
+        }
+    }
+    int query(int u, int l, int r) {
+        if(l <= tr[u].l && r >= tr[u].r) return tr[u].v; // 完全包含
+        int mid = tr[u].l + tr[u].r >> 1;
+        int val = 0;
+        if(l <= mid) val = max(val, query(u << 1, l, r)); // 左节点与[l,r]有重叠部分，访问左节点
+        if(r > mid) val = max(val, query(u << 1 | 1, l, r)); // 右节点与[l,r]有重叠部分，访问右节点
+        return val;
+    }
+
+    int lengthOfLIS(vector<int>& nums, int k) {
+        int mx = *max_element(nums.begin(), nums.end()); // 确认最多有多少个点
+        build(1, 1, mx);
+        for(auto x : nums) {
+            int pre = x - k;
+            int mx = query(1, pre, x - 1); // 找之前的最大值
+            modify(1, x, mx + 1); // 状态转移
+        }
+        return query(1, 1, mx); // 所有dp[i]中的最大值
+    }
+};
+```
+---
+
 ### 673. 最长递增子序列的个数
 `[1,3,5,4,7], ans = 有两个最长递增子序列，分别是 [1, 3, 4, 7] 和[1, 3, 5, 7]。`
 

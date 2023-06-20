@@ -3,7 +3,25 @@
 <center><font face="楷体" size=6, color='red'> 状压DP </font> </center>
 
 
+#### 题型：子集枚举
+```c++
+两种子集枚举的方式：
+方式一：
+int j = other; // j 就表示 不会与x出现交集的集合表示
+do {
+    ...
+    j = (j - 1) & other;
+}while(j != other);
 
+方式二：
+for(int j = other; j; j = (j - 1) & other) {
+    ...
+}
+```
+
+区别就在于是否需要考虑`j = 0`的状态。
+当考虑没有冲突，交集这类问题的时候需要考虑`0`这个状态，因为和任何状态都没冲突，采用方式一。
+当进行集合划分时，如果可能证明，划分一个空集合肯定不优时，可以采用方式二。
 
 ### 982. 按位与为零的三元组
 在数组中找到`3`个下标，可以相同，求使得`nums[i] & nums[j] & nums[k] == 0` 出现的次数。
@@ -67,7 +85,39 @@ public:
 ```
 ---
 
+### 526. 优美的排列
+找到满足要求的的`1 ~ n`的排列的数量。要求为：
+排列后对应位置的数字`num`和索引`i`可以整除[都从1开始]。要么`num % i == 0 or i % num == 0`
 
+```c++
+class Solution {
+public:
+    int cal(int x) {
+        int res = 0;
+        while(x) {
+            x = x & (x - 1);
+            res ++;
+        }
+        return res;
+    }
+    int countArrangement(int n) {
+        int m = 1 << n;
+        vector<int>f(m, 0); // f[1011]: 表示已经选了3个数，分布位置为1011的优美排列数量。
+        f[0] = 1;
+        for(int i = 0; i < m; i++) { // 枚举状态
+            int num = cal(i); // 当前考虑num + 1的放置位置
+            for(int j = 0; j < n; j++) { // 此次选数字j + 1
+                if((i >> j) & 1) continue; // 选过了
+                if(((j + 1) % (num + 1)) && ((num + 1) % (j + 1))) continue; // 不满足放置要求
+                int s = i | (1 << j);
+                f[s] += f[i];
+            }
+        }
+        return f[m - 1];
+    }
+};
+```
+---
 
 ### 6364. 无平方子集计数 [good]
 
@@ -309,6 +359,51 @@ public:
 ```
 ---
 
+### 691. 贴纸拼词
+`stickers = ["with","example","science"], target = "thehat"`
+`ans = 3`
+
+有 `n` 种不同的字符串。每种无限个。想要拼出`target`。[只要字符全有就行，不要求顺序]，问最少需要用几个字符串。
+
+```c++
+class Solution {
+public:
+    int minStickers(vector<string>& stickers, string target) {
+        int n = target.size(), m = 1 << n;
+
+        // 预处理出每个字符串的构成字符
+        vector<vector<int>>cnt(stickers.size(), vector<int>(26, 0));
+        for(int i = 0; i < stickers.size(); i++) {
+            for(auto j : stickers[i]) {
+                cnt[i][j - 'a']++;
+            }
+        }
+        // 状压DP
+        vector<int>f(m, 1e9);
+        f[0] = 0;
+
+        for(int i = 0; i < m; i++) { // 枚举当前状态
+            if(f[i] == 1e9) continue;
+            for(int p = 0; p < stickers.size(); p++) { // 枚举每个可用字符串
+                vector<int>left = cnt[p]; // 字符串p对应的字符表示
+                int ni = i;
+                // 看当前的字符串能满足那些位
+                for(int j = 0; j < n; j++) {
+                    if((i >> j) & 1) continue; // 当前位已经有了
+                    if(left[target[j] - 'a'] > 0) { // 用当前字符串可以满足第j位
+                        left[target[j] - 'a']--;
+                        ni |= (1 << j);
+                    }
+                }
+                f[ni] = min(f[ni], f[i] + 1); 
+            }
+        }
+        return (f[m - 1] == 1e9) ? -1 : f[m - 1];
+    }
+};
+
+```
+---
 
 ### acwing 91. 最短Hamilton路径
 给定一个带权无向图，点从`0∼n−1`标号，求起点 `0`到终点 `n−1`的最短 `Hamilton` 路径。
@@ -354,8 +449,64 @@ int main(){
 ```
 ---
 
+### 1494. 并行课程 II
+有一堆课程以及课程之间的前后关系。每一学期最多上`k`门课，每门课都要求其前驱课程已经学完。问上完所有的课最多需要几个学期。
 
+#### 状压DP
+状态表示：`f[i]`: 当前所学过的课程为`i`时的最少学期。
+状态转移：`f[i | j] = min(f[i | j], f[i] + 1)` 枚举接下来这一学期所有可行的上课方式`j`，用当前状态更新之后的状态。
+
+```c++
+class Solution {
+public:
+    int minNumberOfSemesters(int n, vector<vector<int>>& relations, int k) {
+        // 预处理出每个课程的前驱课程的状压表示
+        vector<int>pre(n, 0);
+        for(auto x : relations) {
+            int a = x[0] - 1, b = x[1] - 1;
+            pre[b] |= (1 << a);
+        }
+        int m = (1 << n);
+        // 预处理出每个状态的1的个数
+        vector<int>ones(m, 0);
+        for(int i = 1; i < m; i++) {
+            ones[i] = ones[i >> 1] + (i & 1);
+        } 
+
+        // 状压DP
+        int f[m]; // f[i] 表示当前已经修的课程的状态表示为i, 其最少需要的学期个数
+        memset(f, 0x3f, sizeof f);
+        f[0] = 0;
+        // eg f[1011] = 3: 表示当修课程0,1,3最少需要3个学期
+        for(int i = 0; i < m; i++) { // 枚举状态， 当前已经修的课程的状态
+            int next = 0; // 表示接下来还可以修的课程的状压表示
+            for(int j = 0; j < n; j++) {
+                if(i >> j & 1) continue; // 当前课程j已经修过了
+                if((pre[j] & i) != pre[j]) continue; // 课程j的前驱课程不全
+                next |= (1 << j);
+            }
+            // 子集枚举
+            int j = next; // 当前准备学的课程为j
+            do {
+                if(ones[j] <= k) f[j | i] = min(f[j | i], f[i] + 1); // 最多学k门
+                j = (j - 1) & next;
+            }while(j != next);
+        }
+        return f[m - 1];
+    }
+};
+```
+---
+
+
+#### 题型：求物品的一个最优排列
 ### 2172. 数组的最大与和
+
+**问题本质：**
+将`m`个物品放到`n`个坑位中(`n >= m`), 每个物品放不同的坑位有不同的价值，问如何放价值最大？
+朴素做法：枚举每个物品的放置情况：$O(n^m)$
+状压`DP`: 状态个数 * 转移个数：$(2^n n)$
+
 `nums = [1,2,3,4,5,6], numSlots = 3, ans = 9`
 给一组物品，每个物品的号码为`nums[i]`, 将其放入篮子中，每个篮子中物品的数量不能超过2个。返回将 `nums` 中所有数放入 `numSlots` 个篮子中的最大**与和**。**与和**定义为每个数与它所在篮子编号的 按位与运算 结果之和。
 
@@ -518,3 +669,46 @@ public:
     }
 };
 ```
+---
+
+
+### 1595. 连通两组点的最小成本
+给一个矩阵，必须使得每行每列都有一个数字被选，问最小的代价。
+`cost = [[1, 3, 5], [4, 1, 1], [1, 5, 3]], ans = 4`
+
+```c++
+class Solution {
+public:
+    const int inf = 0x3f3f3f3f;
+    int connectTwoGroups(vector<vector<int>>& cost) {
+        int n = cost.size(), m = cost[0].size();
+        // 预处理右边每个数选择的最小代价，即每一列的最小值。
+        vector<int>mincost(m, INT_MAX);
+        for(int j = 0; j < m; j++) 
+            for(int i = 0; i < n; i++) 
+                mincost[j] = min(mincost[j], cost[i][j]);
+
+        int f[n + 1][1 << m]; //f[2][1011]：左边前2个数已经连通，右边的连通状态为1011的最小代价
+        // 注意，因为不是1对1连接，所以存在左边2个数，右边3个数连通的情况。
+        memset(f, 0x3f, sizeof f);
+        // 预处理边界条件f[0][j]
+        for(int j = 0; j < (1 << m); j++) {
+            f[0][j] = 0;
+            for(int k = 0; k < m; k++) 
+                if(j >> k & 1) f[0][j] += mincost[k];
+        }
+        // 核心   
+        for(int i = 0; i < n; i++) { // 左边前i - 1个数已经连通了
+            for(int j = 0; j < (1 << m); j++) { // 枚举右边的状态
+                if(f[i][j] == inf) continue;
+                for(int k = 0; k < m; k++) { // 左边第i个与右边第k个相连
+                    int &res = f[i + 1][j | (1 << k)];
+                    res = min(res, f[i][j] + cost[i][k]);
+                }
+            }
+        }
+        return f[n][(1 << m) - 1];
+    }
+};
+```
+---
