@@ -738,3 +738,30 @@ public:
 };
 ```
 ---
+
+### 463. 岛屿的周长
+求连通块的边缘周长
+
+```c++
+class Solution {
+public:
+    // 基本思路：当从1到0时，边长+1
+    int islandPerimeter(vector<vector<int>>& grid) {
+        int n = grid.size(), m = grid[0].size();
+        int dir[5] = {-1, 0, 1, 0, -1};
+        function<int(int, int)>check = [&](int x, int y){
+            if(x < 0 || x >= n || y < 0 || y >= m || grid[x][y] == 0) return 1;
+            return 0;
+        };
+
+        int ans = 0;
+        for(int i = 0; i < n; i++) 
+            for(int j = 0; j < m; j++) 
+                if(grid[i][j] == 1) 
+                    for(int k = 0; k < 4; k++) 
+                        ans += check(i + dir[k], j + dir[k + 1]);
+        return ans;
+    }
+};
+```
+---

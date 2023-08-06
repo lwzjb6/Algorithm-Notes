@@ -119,6 +119,45 @@ public:
 ```
 ---
 
+### 2741. 特别的排列
+`nums = [2,3,6], ans = 2`
+`[3,6,2] 和 [2,6,3] 是 nums 两个特别的排列。`
+求`nums`特别排列的数量。
+特别排列：对于所有的下标： 满足`nums[i] % nums[i+1] == 0 ，or nums[i+1] % nums[i] == 0 `。
+
+**核心点：** 要记录上一步结尾选择的数
+```c++
+class Solution {
+public:
+    const int mod = 1e9 + 7;
+    using ll = long long;
+    int specialPerm(vector<int>& nums) {
+        int n = nums.size(), m = 1 << n;
+        int f[m][n]; 
+        memset(f, 0, sizeof(f));
+        // f[i][j]: i表示nums数组中所有元素是否被选择的状态, 最后一个选的元素的坐标是j的可行排列数
+        // nums = {1, 2, 3, 4}; f[1011][1] 表示：当前选了1,3,4，最后选的数是3的可行排列数
+        for(int i = 0; i < n; i++) f[1 << i][i] = 1; // 初始化所有选一个的情况。
+        
+        for(int i = 0; i < m; i++) {
+            for(int j = 0; j < n; j++) { // 假设最后选的是第j位的元素
+                if(((i >> j) & 1) == 0) continue; // 无意义
+                int li = i ^ (1 << j); // 上一时刻的状态
+                for(int lj = 0; lj < n; lj++) {
+                    if(((li >> lj) & 1) == 0) continue; // 无意义
+                    if((nums[j] % nums[lj] == 0) || (nums[lj] % nums[j] == 0)) 
+                        f[i][j] = (f[i][j] + f[li][lj]) % mod;
+                }
+            }
+        }
+        ll ans = 0;
+        for(int j = 0; j < n; j++) ans = (ans + f[m - 1][j]) % mod;
+        return ans;
+    }
+};
+```
+---
+
 ### 6364. 无平方子集计数 [good]
 
 返回数组 `nums` 中无平方子集的数目（非空）。
