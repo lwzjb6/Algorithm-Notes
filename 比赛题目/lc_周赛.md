@@ -505,3 +505,184 @@ public:
 };
 ```
 ---
+
+### 3296. 移山所需的最少秒数
+山的高度降低 x，需要花费 `workerTimes[i] + workerTimes[i] * 2 + ... + workerTimes[i] * x` 秒。
+
+```
+mountainHeight = 4, workerTimes = [2,1,1]
+ans = 3
+```
+#### 方法1： 最小堆
+```python
+class Solution:
+    def minNumberOfSeconds(self, mountainHeight: int, workerTimes: List[int]) -> int:
+        h = [(x, 1, x) for x in workerTimes]
+        heapify(h)
+        maxn = 0
+        for _ in range(mountainHeight):
+            num, cnt, base = heappop(h)
+            maxn = max(maxn, num)
+            heappush(h, (num + (cnt + 1) * base, cnt + 1, base))
+        return maxn
+```
+时间复杂度：O(n)
+
+#### 方法二： 二分
+问题转化为：每个人最多花费m秒，看能否将山的高度降低mountainHeight，二分枚举m即可。
+难点在于如何根据m计算出每个人能降低的高度x。
+
+根据公式可以计算出：
+对于某个人，其`worktime[i] = t`;
+则 $x  = \frac{(-1 + \sqrt{1 + 4k})}{2} $, 其中`k = 2 * m/ t`
+
+```python
+class Solution:
+    def minNumberOfSeconds(self, mountainHeight: int, workerTimes: List[int]) -> int:
+        def check(m):
+            res = 0
+            for t in workerTimes:
+                k = 2 * m / t
+                x = (-1 + sqrt(1 + 4 * k)) // 2
+                res += x
+            return 1 if res >= mountainHeight else 0 
+
+        max_t = max(workerTimes) # 假设每个人都是工作效率最低的那个人
+        hi = (mountainHeight - 1) // len(workerTimes) + 1 # 求H/n的上界，即每个人平均需要降低的高度
+        R = max_t * (1 + hi) * hi // 2
+        return bisect_left(range(R), True, 1, key=check)
+```
+
+#### 3298. 统计重新排列后包含另一个字符串的子字符串数目 II
+
+找出word1中有多少个字字符串，其重新排列后等于word2
+
+```
+word1 = "abcabc", word2 = "abc"
+ans = 10
+```
+
+#### 滑动窗口找字串经典题目
+```python
+class Solution:
+    def validSubstringCount(self, word1: str, word2: str) -> int:
+        hx = defaultdict(int) # 当访问的key不存在时，会返回0
+        for x in word2:
+            hx[x] += 1
+        len1, len2 = len(word1), len(word2)
+        l = r = cnt = res = 0
+        while r < len1:
+            c = word1[r]
+            if hx[c] > 0:
+                cnt += 1
+            hx[c] -= 1
+            while cnt == len2:
+                res += (len1 - r)
+                hx[word1[l]] += 1
+                if hx[word1[l]] > 0: # 说明左指针右移让一个字符不够了
+                    cnt -= 1
+                l += 1
+            r += 1
+        return res
+```
+
+```python
+class Solution:
+    def validSubstringCount(self, word1: str, word2: str) -> int:
+        js = Counter(word2) # 记录Word2中每个单词出现的个数
+        l = cnt = res = 0
+        for c in word1:
+            if js[c] > 0:
+                cnt += 1
+            js[c] -= 1
+            while cnt == len(word2): # 找到了所有的
+                if js[word1[l]] == 0:
+                    cnt -= 1
+                js[word1[l]] += 1
+                l += 1
+            res += l
+        return res
+```
+
+####  3306：包含每个元音和 K 个辅音的子串数量 II
+题意：统计包含5个元音至少一个并且包含k个辅音的字串的数量
+
+转换：恰好型滑动窗口：转换成两个至少型滑动窗口
+问题等价于如下两个问题：
+
+- 每个元音字母至少出现一次，并且至少包含 k 个辅音字母的子串个数。记作 $f_k$
+- 每个元音字母至少出现一次，并且至少包含 k+1 个辅音字母的子串个数。记作 $f_{k+1}$
+​
+结果为：$f_{k+1} - f_{k}$
+```python
+class Solution:
+     # 统计5个元音至少出现一次，并且至少包含k个辅音的字串的个数
+    def f(self, word: str, k: int) -> int:
+        cnt1 = defaultdict(int) # 哈希表，统计元音的个数
+        cnt2 = ans = l = 0
+        for c in word:
+            if c in 'aeiou':
+                cnt1[c] += 1
+            else :
+                cnt2 += 1
+            while len(cnt1) == 5 and cnt2 >= k:
+                lc = word[l]
+                if lc in 'aeiou':
+                    cnt1[lc] -= 1
+                    if cnt1[lc] == 0:
+                        del cnt1[lc]
+                else:
+                    cnt2 -= 1
+                l += 1
+            ans += l   
+        return ans     
+    def countOfSubstrings(self, word: str, k: int) -> int:
+        return self.f(word, k) - self.f(word, k + 1)
+```
+
+#### 3307. Find the K-th Character in String Game II
+题意：初始是一个字符a, 然后经过操作 operations 后，返回第k个字符
+其中：
+operations[i] == 0: 直接复制前半部分
+operations[i] == 1: 前半部分字符ASCII码+1
+
+```
+Input: k = 10, operations = [0,1,0,1]
+Output: "b"
+
+Appends "a" to "a", word becomes "aa".
+Appends "bb" to "aa", word becomes "aabb".
+Appends "aabb" to "aabb", word becomes "aabbaabb".
+Appends "bbccbbcc" to "aabbaabb", word becomes "aabbaabbbbccbbcc".
+```
+
+#### 方法1：递归，分治，转化为更小的子问题
+```python
+class Solution:
+    def kthCharacter(self, k: int, operations: List[int]) -> str:
+        if len(operations) == 0: # 终止条件
+            return 'a'
+        n = len(operations)
+        op = operations.pop() # 将操作缩短一个
+        m = (1 << (n - 1))
+        if k <= m: # 在左半边
+            return self.kthCharacter(k, operations)
+        else: # 在右半边
+            res = self.kthCharacter(k - m, operations)
+            res = (ord(res) - ord('a') + op) % 26
+            return ascii_lowercase[res]
+```
+
+#### 方法2：迭代
+```python
+class Solution:
+    def kthCharacter(self, k: int, operations: List[int]) -> str:
+        n = len(operations)
+        inc = 0 # 统计需要加的次数
+        for i in range(n - 1, -1, -1):
+            m = 1 << i
+            if k > m:
+                inc += operations[i]
+                k -= m
+        return ascii_lowercase[inc % 26]
+```
