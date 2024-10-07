@@ -686,3 +686,182 @@ class Solution:
                 k -= m
         return ascii_lowercase[inc % 26]
 ```
+
+#### 3302. 字典序最小的合法序列
+两个字符串s, t, 给出一个字典序最小的下标序列idx，使得得到的序列s[idx] 与 t 至多仅改变一个字符就能相等
+```
+word1 = "bacdc", word2 = "abc"
+[1,2,4]
+```
+
+#### 前后缀分解 + 贪心
+贪心策略：因为要求是字典序最小：
+（1）当前能匹配就匹配
+（2）当前能替换就替换
+如何判断当前是否可以替换呢？
+如果考虑是否替换s[i] 和 t[j] ,  若s[i + 1:]可以匹配出t[j + 1:], 则可以替换，所以需要预先处理出后缀数组suf来刻画这种关系
+
+```python
+class Solution:
+    def validSequence(self, s: str, t: str) -> List[int]:
+        n, m = len(s), len(t)
+        # 预处理出后缀数组
+        suf = (n + 1) * [m]
+        j = m - 1
+        for i in range(n - 1, -1, -1):
+            if j >= 0 and s[i] == t[j]:
+                j -= 1
+            suf[i] = j + 1 # s[i:] 可以匹配出t[j+1:]
+        ans = []
+        j = 0
+        changed = 0
+        for i in range(len(s)):
+            if s[i] == t[j]:  # case1: 如果当前的字符可以匹配, 贪心：直接进行匹配
+                j += 1
+                ans.append(i)
+            elif changed == 0 and suf[i + 1] <= j + 1:   # case2: 当前的字符虽然不能完成匹配，但是如果可以替换就直接替换
+                changed = 1
+                j += 1
+                ans.append(i)
+            if j == m: # 已经全部匹配完
+                return ans
+        return []
+```
+
+#### 3309. 连接二进制表示可形成的最大数值
+
+给你一个长度为 3 的整数数组 nums。
+现以某种顺序 连接 数组 nums 中所有元素的 二进制表示 ，请你返回可以由这种方法形成的 最大 数值。
+
+```
+nums = [1,2,3]
+ans = 30
+```
+
+```python
+class Solution:
+    def maxGoodNumber(self, nums: List[int]) -> int:
+        tmp = [bin(x)[2:] for x in nums]
+        ans = ''
+        for v in permutations(tmp): # 枚举所有的排列的情况
+            ans = max(ans, ''.join(v))
+        return int(ans, 2) # 将字符串形式的二进制转化为10进制
+```
+
+#### 3311. 构造符合图结构的二维矩阵
+给定数组之间的相邻关系（上下或左右视为相邻），然后构造出符合要求的二维矩阵
+
+```
+n = 4, edges = [[0,1],[0,2],[1,3],[2,3]]
+ans = [[3,1],[2,0]]
+```
+
+基本思想：通过每个点临边的数量来大致确定其位置，先确定第一行的信息，之后所有行的信息均可以通过边之间相邻关系来得出（注意分类讨论）
+
+```python
+class Solution:
+    def constructGridLayout(self, n: int, edges: List[List[int]]) -> List[List[int]]:
+        # 标准建边的过程
+        g = [[] for _ in range(n)]
+        for x, y in edges:
+            g[x].append(y)
+            g[y].append(x)
+        
+        # 每种度数选一个点, deg[3] = 4 表示节点4的临边个数为3
+        deg = [-1] * 5 # 0, 1, 2, 3, 4
+        for i, x in enumerate(g):
+            deg[len(x)] = i
+        
+        # 分类讨论得到第一行
+        if deg[1] != -1: # 仅有一行或一列
+            row = [deg[1]]
+        elif deg[4] == -1: # 不存在临边为4的点，说明只有两列
+            x = deg[2]
+            for y in g[x]: # 找到x相邻的，且其出边为2的（还有一个为3）
+                if len(g[y]) == 2:
+                    row = [x, y]
+                    break
+        else: # >=3列的情况
+            x = deg[2]
+            row = [x]
+            pre = x
+            x = g[x][0] # 任选一个出边就行
+            while len(g[x]) > 2: # 到最后结尾时的x的临边个数为2
+                row.append(x)
+                # 开始找x右边的点，右边的点的临边个数为3(最后一个点是2), 下边的是4，左边的已经访问过
+                for y in g[x]:
+                    if y != pre and len(g[y]) < 4:
+                        pre = x
+                        x = y
+                        break
+            row.append(x) # 把最后一个点给放进来
+        
+        # 开始处理剩下行
+        ans = [[] for _ in range(n // len(row))]
+        ans[0] = row
+        vis = [0] * n
+        for x in row: vis[x] = 1
+        for i in range(1, len(ans)): # 依次处理每一行
+            for x in ans[i - 1]: # 上一行的每一个元素
+                for y in g[x]:
+                    if vis[y] == 0: # 没有遍历过的就是当前应该放的
+                        vis[y] = 1
+                        ans[i].append(y)
+                        break
+        return ans
+```
+
+#### 3312. 查询排序后的最大公约数
+gcdPairs 表示数组 nums 中所有满足 0 <= i < j < n 的数对 (nums[i], nums[j]) 的最大公约数升序排列构成的数组。
+对于每个查询 queries[i] ，你需要找到 gcdPairs 中下标为 queries[i] 的元素。
+
+```
+输入：nums = [2,3,4], queries = [0,2,2]
+输出：[1,2,2]
+解释：
+gcdPairs = [gcd(nums[0], nums[1]), gcd(nums[0], nums[2]), gcd(nums[1], nums[2])] = [1, 2, 1].
+升序排序后得到 gcdPairs = [1, 1, 2] 。
+所以答案为 [gcdPairs[queries[0]], gcdPairs[queries[1]], gcdPairs[queries[2]]] = [1, 2, 2] 。
+```
+`2 <= n == nums.length <= 10`
+
+直观的笨办法就是预处理出所有的gcd值，一共有$C_n^2$种情况，然后再排序，其时间复杂度为$O(n^2logn^2)$, 超时
+
+##### 枚举+容斥原理+前缀和+二分
+
+改为统计gcd的值分别为1......mx的个数gcdCnt
+难点1：回答询问：（前缀和 + 二分）
+```
+gcdPairs=[1,1,2,2,3,3,3]
+gcdCnt=[0,2,2,3] # 对应索引的gcd出现的次数
+计算其前缀和，得 s=[0,2,4,7]。
+（1）q=0,1，答案都是 s 中的大于 q 的第一个数的下标，即 1。
+（2）q=2,3，答案都是 s 中的大于 q 的第一个数的下标，即 2。
+（3）q=4,5,6，答案都是 s 中的大于 q 的第一个数的下标，即 3。
+所以在 s 中 二分查找 大于 q 的第一个数的下标即可。
+```
+难点2：如何统计`gcdCnt[x]`（容斥原理）
+
+首先统计x的倍数的个数c，其倍数任意两个数的gcd一共有c(c - 1)/2个。但是这里面并非所有gcd都等于x, 也可能是2x, 3x...
+因此：`gcdCnt[x] = c(c - 1)/2 - gcdCnt[2x] - gcdCnt[3x]......  `
+
+```python
+class Solution:
+    def gcdValues(self, nums: List[int], queries: List[int]) -> List[int]:
+        mx = max(nums) # 最大公约数不可能大于最大值
+        cnt = [0] * (mx + 1) # cnt[x]表示x的个数，
+        for x in nums: cnt[x] += 1 
+
+        gcdcnt = [0] * (mx + 1)
+        for i in range(mx, 0, -1): # 倒序枚举
+            c = 0
+            for j in range(i, mx + 1, i): # 直接跳倍数
+                c += cnt[j] 
+                gcdcnt[i] -= gcdcnt[j]
+            gcdcnt[i] += c * (c - 1) // 2
+        
+        # 前缀和 + 二分
+        s = list(accumulate(gcdcnt))
+        ans = [bisect_right(s, q) for q in queries]
+        return ans
+```
