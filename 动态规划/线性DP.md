@@ -194,7 +194,45 @@ class Solution:
         return f[n - 1]
 ```
 
+#### 740. 删除并获得点数
+题意：每获得一个数`x`，便不能获取`x-1`和`x+1`, 问最多获得的元素和，注意有重复的元素
 
+**核心思路：** 先统计每个元素出现的次数cnt, 然后转化为打家劫舍问题
+
+```python
+class Solution:
+    def deleteAndEarn(self, nums: List[int]) -> int:
+        cnt = Counter(nums)
+        n = max(nums) # 最大的值
+        f = [0, cnt[1]] + [0] * (n - 1)
+        for i in range(2, n + 1):
+            f[i] = max(f[i - 1], f[i - 2] + i * cnt[i])
+        return f[n]
+```
+
+#### 打家劫舍2：
+题意：整个数组是个环，尾和首相邻，也不能一起偷
+
+**核心思路：分类讨论nums[0]要不要偷**
+
+```python
+class Solution:
+    def rob(self, nums: List[int]) -> int:
+        # 打家劫舍1
+        def rob1(nums):
+            a = b = 0
+            for x in nums:
+                a, b = b, max(b, a + x)
+            return b
+        # 不偷nums[0] 和 偷nums[0]的两种情况 
+        return max(rob1(nums[1:]), nums[0] + rob1(nums[2:-1]))
+```
+
+---
+
+###  类型三、最大字段和
+
+####
 
 ---
 
