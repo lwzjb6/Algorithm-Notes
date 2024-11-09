@@ -230,9 +230,125 @@ class Solution:
 
 ---
 
-###  类型三、最大字段和
+###  类型三、最大字段（子数组）和
 
-####
+状态表示：f[i] 以当前a[i]结尾的最大子数组和，核心是判断是否要和左边拼起来
+- 和左边拼起来：f[i] = f[i - 1] + a[i]
+- 重新开始：f[i] = a[i]
+
+状态转移方程：f[i] = max(f[i - 1], 0 ) + a[i]
+结果： max(f)
+
+#### 53. 最大子数组和
+
+**思路1：基本的状态转移，贪心思路**
+```python
+class Solution:
+    def maxSubArray(self, nums: List[int]) -> int:
+        pre, maxn = 0, -inf
+        for x in nums:
+            pre = max(pre, 0) + x # 两步，先求cur, 然后再赋值给pre
+            maxn = max(pre, maxn)
+        return maxn
+```
+注：如果子数组允许为空，manx = 0, 否则，maxn = -inf
+
+**思路2：转化为股票买卖问题，找到前缀和的差最大的区间**
+```python
+class Solution:
+    def maxSubArray(self, nums: List[int]) -> int:
+        ans = -inf
+        pre_sum = min_pre_sum = 0
+        for x in nums:
+            pre_sum += x
+            ans = max(ans, pre_sum - min_pre_sum)
+            min_pre_sum = min(min_pre_sum, pre_sum)
+        return ans
+```
+
+#### 1749. 任意子数组和的绝对值的最大值
+题意：求子数组绝对值的最大值。
+
+**思路：和求最大子数组一样的思路，只不过多求一个最小子数组，然后两者取绝对值较大的**
+```python
+class Solution:
+    def maxAbsoluteSum(self, nums: List[int]) -> int:
+        f_max = f_min = ans = 0
+        for x in nums:
+            f_max = max(f_max, 0) + x
+            f_min = min(f_min, 0) + x
+            ans = max(ans, f_max, -f_min)
+        return ans
+```
+
+**思路2：前缀和，然后区间绝对值最大就等于最大值-最小值**
+```python
+class Solution:
+    def maxAbsoluteSum(self, nums: List[int]) -> int:
+        b = list(accumulate(nums, initial=0))
+        return max(b) - min(b)
+```
+`53. 最大子数组和`不能这样做的原因时，因为他只能后面-前面求对应区间的前缀和，但由于求绝对值，所以可以求-（后面-前面） = 前面-后面
+
+
+#### 918. 环形子数组的最大和
+题意：允许环形，求最大子数组和
+**核心思路：**
+（1）如果不考虑环形，等价于普通的最大子数组和
+（2）如果考虑环形，等价于sum(nums) - 普通的最小子数组和
+
+```python
+class Solution:
+    def maxSubarraySumCircular(self, nums: List[int]) -> int:
+        pre_max = pre_min = 0
+        max_s = -inf
+        min_s = 0
+        for x in nums:
+            # 最大子数组和
+            pre_max = max(pre_max, 0) + x
+            max_s = max(max_s, pre_max)
+
+            # 最小子数组和
+            pre_min = min(pre_min, 0) + x
+            min_s = min(min_s, pre_min)
+        # 在这种情况下，两边没有元素，不符合题目要求，数组不为空
+        if sum(nums) == min_s:
+            return max_s # 因为只能返回max_s
+        return max(max_s, sum(nums) - min_s)
+```
+#### 2321. 拼接数组的最大分数
+题意：两个数组`nums1, nums2`，可以选择任何的区间`[left, right]`进行交换，求交换后$\max\{nums1^{\prime}, nums2^{\prime}\}$
+
+**思路分析：**
+```c
+假设原来两个数组的和为s1,s2
+任选一个区间[left, right], 两个数组的这段子数组的和分别为k1, k2
+因此:
+nums1_new = s1 - k1 + k2 = s1 - (k1 - k2)
+nums2_new = s2 - k2 + k1 = s2 + (k1 - k2)
+因此令diff = nums1 - nums2
+然后求出diff的最小字段和f_min， 和最大字段和f_max
+ans = max(s1 - f_min, s2 + f_max)
+```
+```python
+class Solution:
+    def maximumsSplicedArray(self, nums1: List[int], nums2: List[int]) -> int:
+        n = len(nums1)
+        s1, s2 = sum(nums1), sum(nums2)
+        nums = [nums1[i] - nums2[i] for i in range(n)]
+
+        pre_min = pre_max = 0
+        f_max = f_min = 0
+        for x in nums:
+            pre_max = max(pre_max, 0) + x
+            f_max = max(f_max, pre_max)
+
+            pre_min = min(pre_min, 0) + x
+            f_min = min(f_min, pre_min)
+        
+        return max(s1 - f_min, s2 + f_max)
+        
+```
 
 ---
 
